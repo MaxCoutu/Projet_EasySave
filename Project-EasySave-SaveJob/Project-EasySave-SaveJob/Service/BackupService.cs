@@ -22,7 +22,7 @@ namespace Projet.Service
             _logger   = logger;
             _repo     = repo;
             _settings = settings;
-            _jobs     = new List<BackupJob>(_repo.Load());   // illimité
+            _jobs     = new List<BackupJob>(_repo.Load());
         }
 
         
@@ -73,6 +73,11 @@ namespace Projet.Service
 
             foreach (string src in files)
             {
+                if (PackageBlocker.IsBlocked(_settings))
+                {
+                 
+                    Environment.Exit(1);
+                }
                 string rel  = Path.GetRelativePath(job.SourceDir, src);
                 string dest = Path.Combine(job.TargetDir, rel);
                 Directory.CreateDirectory(Path.GetDirectoryName(dest));
