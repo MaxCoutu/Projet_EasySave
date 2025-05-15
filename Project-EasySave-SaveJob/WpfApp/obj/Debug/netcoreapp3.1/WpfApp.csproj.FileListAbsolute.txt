@@ -26,3 +26,9 @@ C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob
 C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.dll
 C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.pdb
 C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.genruntimeconfig.cache
+C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\MainWindow.g.cs
+C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\GeneratedInternalTypeHelper.g.cs
+C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\AddJobView.baml
+C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\AddJobView.g.cs
+C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\RemoveJobView.baml
+C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\RemoveJobView.g.cs

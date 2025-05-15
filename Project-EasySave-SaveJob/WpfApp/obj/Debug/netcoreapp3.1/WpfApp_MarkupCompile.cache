@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NETCOREAPP;NETCOREAPP3_1;
 C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\App.xaml
-11407045341
+3-126865545
 
-3-1233169557
+5-287784855
 193-1317269453
-MainWindow.xaml;
+View\AddJobView.xaml;View\MainWindow.xaml;View\RemoveJobView.xaml;
 
-False
+True
 

@@ -12,6 +12,15 @@ namespace Projet.ViewModel
     {
         private readonly IBackupService _svc;
 
+        public IBackupService Svc => _svc;
+
+        public void RefreshJobs()
+        {
+            Jobs.Clear();
+            foreach (var job in _svc.GetJobs())
+                Jobs.Add(job);
+        }
+
         public ObservableCollection<BackupJob> Jobs { get; }
         private BackupJob _selected;
         public  BackupJob SelectedJob
@@ -40,5 +49,8 @@ namespace Projet.ViewModel
 
         public event Action AddJobRequested;
         public event Action RemoveJobRequested;
+
     }
+
 }
+

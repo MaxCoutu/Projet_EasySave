@@ -1,0 +1,29 @@
+<Window x:Class="Projet.Wpf.View.AddJobView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ajouter une tâche" Height="300" Width="400">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Nom de la tâche" />
+            <TextBox Text="{Binding Builder.Name}" />
+
+            <TextBlock Text="Dossier source" Margin="0,10,0,0"/>
+            <TextBox Text="{Binding Builder.SourceDir}" />
+
+            <TextBlock Text="Dossier cible" Margin="0,10,0,0"/>
+            <TextBox Text="{Binding Builder.TargetDir}" />
+
+            <TextBlock Text="Type de sauvegarde (full/diff)" Margin="0,10,0,0"/>
+            <TextBox Text="{Binding Builder.Type}" />
+
+            <Button Content="Ajouter" Command="{Binding AddJobCmd}" Margin="0,10,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

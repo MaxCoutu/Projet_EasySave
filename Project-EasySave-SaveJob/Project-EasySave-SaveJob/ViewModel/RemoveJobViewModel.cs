@@ -1,15 +1,23 @@
 ﻿using Projet.Model;
 using Projet.Service;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Collections.ObjectModel;
+using System.Windows.Input;
+using Projet.Infrastructure;
 
 namespace Projet.ViewModel
 {
     public class RemoveJobViewModel
     {
         private readonly IBackupService _svc;
-        public RemoveJobViewModel(IBackupService svc) => _svc = svc;
+
+        public RemoveJobViewModel(IBackupService svc)
+        {
+            _svc = svc;
+            Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
+        }
+
+        public ObservableCollection<BackupJob> Jobs { get; }
 
         public BackupJob SelectedJob { get; set; }
 
@@ -18,5 +26,13 @@ namespace Projet.ViewModel
             if (SelectedJob != null)
                 _svc.RemoveBackup(SelectedJob.Name);
         }
+
+        public event Action JobRemoved;
+
+        public ICommand RemoveCmd => new RelayCommand(_ =>
+        {
+            Remove();
+            JobRemoved?.Invoke();
+        });
     }
 }
