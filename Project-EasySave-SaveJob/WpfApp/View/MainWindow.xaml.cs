@@ -1,6 +1,6 @@
 ﻿using Projet.ViewModel;
 using System.Windows;
-using WpfApp;  // <- important pour accéder à App
+using WpfApp;
 
 namespace Projet.Wpf.View
 {
