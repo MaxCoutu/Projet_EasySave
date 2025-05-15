@@ -24,14 +24,15 @@
                  SelectedItem="{Binding SelectedJob}"
                  Margin="0 0 0 10"/>
 
-		<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-			<StackPanel.Resources>
-				<Style TargetType="Button">
-					<Setter Property="Margin" Value="5,0"/>
-				</Style>
-			</StackPanel.Resources>
-			<Button Content="Ajouter" Width="100" Command="{Binding AddJobCommand}" />
-			<Button Content="Supprimer" Width="100" Command="{Binding RemoveJobCommand}" />
-		</StackPanel>
+		<DockPanel>
+			<!-- Boutons en haut -->
+			<StackPanel DockPanel.Dock="Top" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+				<Button Content="Ajouter" Width="100" Command="{Binding ShowAddJobViewCommand}" />
+				<Button Content="Supprimer" Width="100" Command="{Binding ShowRemoveJobViewCommand}" />
+			</StackPanel>
+
+			<!-- Vue dynamique ici -->
+			<ContentControl Content="{Binding CurrentViewModel}" />
+		</DockPanel>
 	</Grid>
 </Window>

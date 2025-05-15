@@ -6,8 +6,8 @@ namespace Projet.View
 {
     public class ConsoleRemoveJobView : IRemoveJobView
     {
-        private readonly RemoveJobViewModel _vm;
-        private readonly IBackupService _svc;
+        public readonly RemoveJobViewModel _vm;
+        public readonly IBackupService _svc;
 
         public ConsoleRemoveJobView(RemoveJobViewModel vm, IBackupService svc)
         {

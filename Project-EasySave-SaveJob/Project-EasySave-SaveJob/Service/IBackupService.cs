@@ -11,12 +11,12 @@ namespace Projet.Service
     {
         event Action<StatusEntry> StatusUpdated;
 
-        void AddBackup(BackupJob job);
-        void RemoveBackup(string name);
+        void AddJob(BackupJob job);              
+        void RemoveJob(string name);             
 
         Task ExecuteBackupAsync(string name);
         Task ExecuteAllBackupsAsync();
 
-        IReadOnlyList<BackupJob> GetJobs();
+        IReadOnlyList<BackupJob> GetJobs();      
     }
 }

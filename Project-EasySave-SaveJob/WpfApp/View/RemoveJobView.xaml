@@ -1,9 +1,23 @@
-<Window x:Class="Projet.Wpf.View.RemoveJobView"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Supprimer une tâche" Height="300" Width="400">
-    <Grid Margin="10">
-        <ListBox ItemsSource="{Binding Jobs}" SelectedItem="{Binding SelectedJob}" DisplayMemberPath="Name" />
-        <Button Content="Supprimer" VerticalAlignment="Bottom" Height="30" Margin="0,10,0,0" Command="{Binding RemoveCmd}" />
-    </Grid>
-</Window>
+<UserControl x:Class="Projet.Wpf.View.RemoveJobView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<Grid Margin="20">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+
+		<ListBox ItemsSource="{Binding Jobs}"
+                 SelectedItem="{Binding SelectedJob}"
+                 DisplayMemberPath="Name"
+                 Grid.Row="0"
+                 Margin="0,0,0,10"/>
+
+		<Button Content="Supprimer la tâche"
+                Command="{Binding RemoveCmd}"
+                Grid.Row="1"
+                Height="30"
+                HorizontalAlignment="Right"
+                Width="150"/>
+	</Grid>
+</UserControl>

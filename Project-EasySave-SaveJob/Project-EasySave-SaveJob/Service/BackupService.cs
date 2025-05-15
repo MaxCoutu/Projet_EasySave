@@ -12,27 +12,28 @@ namespace Projet.Service
     {
         public event Action<StatusEntry> StatusUpdated;
 
-        private readonly ILogger         _logger;
-        private readonly IJobRepository  _repo;
-        private readonly Settings        _settings;
+        private readonly ILogger _logger;
+        private readonly IJobRepository _repo;
+        private readonly Settings _settings;
         private readonly List<BackupJob> _jobs;
 
         public BackupService(ILogger logger, IJobRepository repo, Settings settings)
         {
-            _logger   = logger;
-            _repo     = repo;
+            _logger = logger;
+            _repo = repo;
             _settings = settings;
-            _jobs     = new List<BackupJob>(_repo.Load());
+            _jobs = new List<BackupJob>(_repo.Load());
         }
 
-        
-        public void AddBackup(BackupJob job)
+        // Renommé ici en AddJob
+        public void AddJob(BackupJob job)
         {
             _jobs.Add(job);
             _repo.Save(_jobs);
         }
 
-        public void RemoveBackup(string name)
+        // Renommé ici en RemoveJob
+        public void RemoveJob(string name)
         {
             _jobs.RemoveAll(j => j.Name == name);
             _repo.Save(_jobs);
@@ -40,7 +41,6 @@ namespace Projet.Service
 
         public IReadOnlyList<BackupJob> GetJobs() => _jobs.AsReadOnly();
 
-        
         public async Task ExecuteBackupAsync(string name)
         {
             if (PackageBlocker.IsBlocked(_settings))
@@ -64,45 +64,41 @@ namespace Projet.Service
             }
         }
 
-    
         private async Task ProcessJobAsync(BackupJob job)
         {
-            var files      = Directory.EnumerateFiles(job.SourceDir, "*", SearchOption.AllDirectories).ToList();
+            var files = Directory.EnumerateFiles(job.SourceDir, "*", SearchOption.AllDirectories).ToList();
             long totalSize = files.Sum(f => new FileInfo(f).Length);
-            int  total     = files.Count, left = total;
+            int total = files.Count, left = total;
 
             foreach (string src in files)
             {
                 if (PackageBlocker.IsBlocked(_settings))
                 {
-                 
                     Environment.Exit(1);
                 }
-                string rel  = Path.GetRelativePath(job.SourceDir, src);
+                string rel = Path.GetRelativePath(job.SourceDir, src);
                 string dest = Path.Combine(job.TargetDir, rel);
                 Directory.CreateDirectory(Path.GetDirectoryName(dest));
-            
-                 
+
                 var swCopy = System.Diagnostics.Stopwatch.StartNew();
                 await Task.Run(() => File.Copy(src, dest, true));
                 swCopy.Stop();
 
                 int encMs = 0;
-            if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
-            {
-                encMs = CryptoSoftHelper.Encrypt(dest, _settings);
-                _ = CryptoSoftHelper.Encrypt(dest, _settings);   
-                
-            }
+                if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
+                {
+                    encMs = CryptoSoftHelper.Encrypt(dest, _settings);
+                    _ = CryptoSoftHelper.Encrypt(dest, _settings);
+                }
 
                 _logger.LogEvent(new LogEntry
                 {
-                    Timestamp        = DateTime.UtcNow,
-                    JobName          = job.Name,
-                    SourcePath       = src,
-                    DestPath         = dest,
-                    FileSize         = new FileInfo(src).Length,
-                    TransferTimeMs   = (int)swCopy.ElapsedMilliseconds,
+                    Timestamp = DateTime.UtcNow,
+                    JobName = job.Name,
+                    SourcePath = src,
+                    DestPath = dest,
+                    FileSize = new FileInfo(src).Length,
+                    TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
                     EncryptionTimeMs = encMs
                 });
 
@@ -110,13 +106,13 @@ namespace Projet.Service
                 Report(new StatusEntry
                 {
                     Name = job.Name,
-                    SourceFilePath    = src,
-                    TargetFilePath    = dest,
-                    State             = "ACTIVE",
-                    TotalFilesToCopy  = total,
-                    TotalFilesSize    = totalSize,
-                    NbFilesLeftToDo   = left,
-                    Progression       = (total - left) / (double)total
+                    SourceFilePath = src,
+                    TargetFilePath = dest,
+                    State = "ACTIVE",
+                    TotalFilesToCopy = total,
+                    TotalFilesSize = totalSize,
+                    NbFilesLeftToDo = left,
+                    Progression = (total - left) / (double)total
                 });
             }
         }
