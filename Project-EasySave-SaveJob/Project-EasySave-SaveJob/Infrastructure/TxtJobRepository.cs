@@ -45,13 +45,14 @@ namespace Projet.Infrastructure
             return list;
         }
 
-        
+
         public void Save(IReadOnlyList<BackupJob> jobs)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(_file)!);
 
             var lines = jobs.Select(j =>
-                $"{j.Name}|{j.SourceDir}|{j.TargetDir}|{j.Strategy.Type.ToLower()}");
+                $"{j.Name}|{j.SourceDir}|{j.TargetDir}|{(j.Strategy?.Type?.ToLower() ?? "full")}"
+            );
 
             File.WriteAllLines(_file, lines);
         }

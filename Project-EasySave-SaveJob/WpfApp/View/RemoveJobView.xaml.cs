@@ -8,6 +8,13 @@ namespace Projet.Wpf.View
     /// </summary>
     public partial class RemoveJobView : UserControl
     {
+        // Constructeur sans paramètre requis par WPF
+        public RemoveJobView()
+        {
+            InitializeComponent();
+        }
+
+        // Constructeur utilisé pour l'injection du MainViewModel
         public RemoveJobView(MainViewModel mainVm)
         {
             InitializeComponent();

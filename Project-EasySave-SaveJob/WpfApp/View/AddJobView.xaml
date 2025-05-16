@@ -29,6 +29,6 @@
 			<ComboBoxItem Content="Diff" />
 		</ComboBox>
 
-		<Button Content="Créer la tâche" Command="{Binding AddJobCmd}" Grid.Row="8" Height="30" Margin="0,20,0,0"/>
+		<Button Content="Créer la tâche" Command="{Binding ConfirmCommand}" Grid.Row="8" Height="30" Margin="0,20,0,0"/>
 	</Grid>
 </UserControl>

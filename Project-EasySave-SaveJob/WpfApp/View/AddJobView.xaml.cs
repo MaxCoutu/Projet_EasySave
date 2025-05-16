@@ -12,6 +12,8 @@ namespace Projet.Wpf.View
         public AddJobView()
         {
             InitializeComponent();
+            // Optionnel : DataContext par défaut si jamais utilisé sans paramètre
+            // DataContext = new AddJobViewModel(...); // à adapter si besoin
         }
 
         public AddJobView(MainViewModel mainVm)
@@ -24,9 +26,8 @@ namespace Projet.Wpf.View
             vm.JobAdded += () =>
             {
                 mainVm.RefreshJobs();
-                // Pour un UserControl, il n'y a pas de Close()
-                // Si tu veux masquer le contrôle, tu peux faire :
-                // this.Visibility = Visibility.Collapsed;
+                // Navigation vers la vue principale
+                mainVm.CurrentViewModel = mainVm; // ou la vue principale selon ta logique
             };
         }
     }
