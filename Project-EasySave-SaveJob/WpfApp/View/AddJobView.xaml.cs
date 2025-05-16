@@ -1,10 +1,19 @@
+using System.Windows.Controls;
 using Projet.ViewModel;
-using System.Windows;
 
 namespace Projet.Wpf.View
 {
-    public partial class AddJobView : Window
+    /// <summary>
+    /// Logique d'interaction pour AddJobView.xaml
+    /// </summary>
+    public partial class AddJobView : UserControl
     {
+        // Constructeur sans paramètre requis par WPF
+        public AddJobView()
+        {
+            InitializeComponent();
+        }
+
         public AddJobView(MainViewModel mainVm)
         {
             InitializeComponent();
@@ -15,7 +24,9 @@ namespace Projet.Wpf.View
             vm.JobAdded += () =>
             {
                 mainVm.RefreshJobs();
-                Close();
+                // Pour un UserControl, il n'y a pas de Close()
+                // Si tu veux masquer le contrôle, tu peux faire :
+                // this.Visibility = Visibility.Collapsed;
             };
         }
     }

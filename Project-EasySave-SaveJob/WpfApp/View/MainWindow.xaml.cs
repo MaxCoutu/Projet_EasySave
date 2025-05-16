@@ -1,5 +1,6 @@
 ﻿using Projet.ViewModel;
 using System.Windows;
+using System.Windows.Controls;
 using WpfApp;
 
 namespace Projet.Wpf.View
@@ -21,14 +22,16 @@ namespace Projet.Wpf.View
 
         private void ShowAddJobView()
         {
+            // Remplace le contenu principal par le UserControl AddJobView
             var view = new AddJobView(_vm);
-            view.ShowDialog();
+            this.Content = view;
         }
 
         private void ShowRemoveJobView()
         {
+            // Remplace le contenu principal par le UserControl RemoveJobView
             var view = new RemoveJobView(_vm);
-            view.ShowDialog();
+            this.Content = view;
         }
     }
 }

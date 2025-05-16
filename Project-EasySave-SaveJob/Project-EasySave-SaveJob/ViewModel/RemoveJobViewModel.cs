@@ -15,23 +15,27 @@ namespace Projet.ViewModel
 
         public ICommand ConfirmRemoveCommand { get; }
 
+        public event Action JobRemoved;
+
         public RemoveJobViewModel(IBackupService svc)
         {
             _svc = svc;
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
 
-            ConfirmRemoveCommand = new RelayCommand(_ => Remove(), _ => SelectedJob != null);
+            // Utilisation explicite du namespace pour éviter tout conflit
+            ConfirmRemoveCommand = new Projet.Infrastructure.RelayCommand(
+                _ => Remove(),
+                _ => SelectedJob != null
+            );
         }
 
-        public event Action JobRemoved;
-
-        private void Remove()
+        public void Remove()
         {
             if (SelectedJob != null)
             {
                 _svc.RemoveJob(SelectedJob.Name);
                 Jobs.Remove(SelectedJob);
-                JobRemoved?.Invoke(); // Déclenche l'événement
+                JobRemoved?.Invoke();
             }
         }
     }

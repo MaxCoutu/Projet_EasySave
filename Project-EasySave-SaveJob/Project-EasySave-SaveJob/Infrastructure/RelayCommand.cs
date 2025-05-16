@@ -8,7 +8,14 @@ namespace Projet.Infrastructure
         private readonly Action<object> _execute;
         private readonly Predicate<object> _canExecute;
 
-        public RelayCommand(Action<object> execute, Predicate<object> canExecute = null)
+        // Constructeur pour Action seule
+        public RelayCommand(Action<object> execute)
+            : this(execute, null)
+        {
+        }
+
+        // Constructeur pour Action + Predicate
+        public RelayCommand(Action<object> execute, Predicate<object> canExecute)
         {
             _execute = execute ?? throw new ArgumentNullException(nameof(execute));
             _canExecute = canExecute;

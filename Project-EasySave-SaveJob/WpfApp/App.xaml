@@ -3,12 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:Projet.ViewModel;assembly=Project-EasySave"
              xmlns:view="clr-namespace:Projet.Wpf.View"
-             StartupUri="MainWindow.xaml">
+             StartupUri="View/MainWindow.xaml">
 
 	<Application.Resources>
-		<DataTemplate DataType="{x:Type vm:MainViewModel}">
-			<view:MainView />
-		</DataTemplate>
+		<!-- Supprimé le DataTemplate pour MainViewModel car MainView n'existe pas -->
 		<DataTemplate DataType="{x:Type vm:AddJobViewModel}">
 			<view:AddJobView />
 		</DataTemplate>

@@ -1,9 +1,12 @@
+using System.Windows.Controls;
 using Projet.ViewModel;
-using System.Windows;
 
 namespace Projet.Wpf.View
 {
-    public partial class RemoveJobView : Window
+    /// <summary>
+    /// Logique d'interaction pour RemoveJobView.xaml
+    /// </summary>
+    public partial class RemoveJobView : UserControl
     {
         public RemoveJobView(MainViewModel mainVm)
         {
@@ -22,9 +25,9 @@ namespace Projet.Wpf.View
             vm.JobRemoved += () =>
             {
                 mainVm.RefreshJobs();
-                Close();
+                // Pour un UserControl, il n'y a pas de Close()
+                // this.Visibility = Visibility.Collapsed; // si besoin
             };
         }
-
     }
 }

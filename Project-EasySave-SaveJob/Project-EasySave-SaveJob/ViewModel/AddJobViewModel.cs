@@ -19,7 +19,11 @@ namespace Projet.ViewModel
         {
             _svc = svc;
 
-            ConfirmCommand = new RelayCommand(_ => AddJob(), _ => CanAddJob());
+            // Utilisation explicite du namespace pour éviter tout conflit
+            ConfirmCommand = new Projet.Infrastructure.RelayCommand(
+                _ => AddJob(),
+                _ => CanAddJob()
+            );
         }
 
         public void AddJob()
@@ -32,10 +36,12 @@ namespace Projet.ViewModel
         public bool CanAddJob()
         {
             // Vérifie que tous les champs sont remplis
-            return !string.IsNullOrWhiteSpace(Builder?.Build().Name)
-                && !string.IsNullOrWhiteSpace(Builder?.Build().SourceDir)
-                && !string.IsNullOrWhiteSpace(Builder?.Build().TargetDir)
-                && Builder?.Build().Strategy != null;
+            var job = Builder?.Build();
+            return job != null
+                && !string.IsNullOrWhiteSpace(job.Name)
+                && !string.IsNullOrWhiteSpace(job.SourceDir)
+                && !string.IsNullOrWhiteSpace(job.TargetDir)
+                && job.Strategy != null;
         }
     }
 }

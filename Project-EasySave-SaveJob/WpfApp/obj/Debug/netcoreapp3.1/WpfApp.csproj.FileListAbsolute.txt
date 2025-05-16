@@ -64,3 +64,5 @@ C:\Users\maxco\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\Wp
 C:\Users\maxco\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.sourcelink.json
 C:\Users\maxco\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.csproj.Up2Date
 C:\Users\maxco\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.genruntimeconfig.cache
+C:\Users\maxco\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\GeneratedInternalTypeHelper.g.cs
+C:\Users\maxco\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\App.baml
