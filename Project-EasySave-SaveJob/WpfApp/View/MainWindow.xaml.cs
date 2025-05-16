@@ -1,7 +1,5 @@
 ﻿using Projet.ViewModel;
 using System.Windows;
-using System.Windows.Controls;
-using WpfApp;
 
 namespace Projet.Wpf.View
 {
@@ -15,23 +13,24 @@ namespace Projet.Wpf.View
 
             _vm = new MainViewModel(App.BackupService);
             DataContext = _vm;
-
-            _vm.AddJobRequested += ShowAddJobView;
-            _vm.RemoveJobRequested += ShowRemoveJobView;
         }
 
-        private void ShowAddJobView()
+        private void RemoveJob_Click(object sender, RoutedEventArgs e)
         {
-            // Remplace le contenu principal par le UserControl AddJobView
-            var view = new AddJobView(_vm);
-            this.Content = view;
-        }
+            // Récupère le job associé à la ligne du bouton cliqué
+            var job = (sender as FrameworkElement)?.DataContext as BackupJob;
+            if (job == null) return;
 
-        private void ShowRemoveJobView()
-        {
-            // Remplace le contenu principal par le UserControl RemoveJobView
-            var view = new RemoveJobView(_vm);
-            this.Content = view;
+            var result = MessageBox.Show(
+                $"Voulez-vous vraiment supprimer la tâche '{job.Name}' ?",
+                "Confirmation de suppression",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _vm.RemoveJobCommand.Execute(job);
+            }
         }
     }
 }
