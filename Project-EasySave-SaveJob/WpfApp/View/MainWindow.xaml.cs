@@ -1,6 +1,5 @@
-﻿using Projet.ViewModel;
-using System.Windows;
-using System.Windows.Controls;
+﻿using System.Windows;
+using Projet.ViewModel;
 using WpfApp;
 
 namespace Projet.Wpf.View
@@ -13,23 +12,27 @@ namespace Projet.Wpf.View
         {
             InitializeComponent();
 
-            _vm = new MainViewModel(App.BackupService);
+            // Injecter BackupService, LanguageService et PathProvider
+            _vm = new MainViewModel(
+                App.BackupService,
+                App.LanguageService,
+                App.PathProvider);
+
             DataContext = _vm;
 
+            // vos événements existants pour changer de vue
             _vm.AddJobRequested += ShowAddJobView;
             _vm.RemoveJobRequested += ShowRemoveJobView;
         }
 
         private void ShowAddJobView()
         {
-            // Remplace le contenu principal par le UserControl AddJobView
             var view = new AddJobView(_vm);
             this.Content = view;
         }
 
         private void ShowRemoveJobView()
         {
-            // Remplace le contenu principal par le UserControl RemoveJobView
             var view = new RemoveJobView(_vm);
             this.Content = view;
         }

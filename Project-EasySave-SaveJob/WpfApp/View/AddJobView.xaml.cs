@@ -20,15 +20,15 @@ namespace Projet.Wpf.View
         {
             InitializeComponent();
 
-            var vm = new AddJobViewModel(mainVm.Svc);
-            DataContext = vm;
+            //var vm = new AddJobViewModel(mainVm.Svc);
+            //DataContext = vm;
 
-            vm.JobAdded += () =>
+            /*vm.JobAdded += () =>
             {
                 mainVm.RefreshJobs();
                 // Navigation vers la vue principale
                 mainVm.CurrentViewModel = mainVm; // ou la vue principale selon ta logique
-            };
+            };*/
         }
     }
 }

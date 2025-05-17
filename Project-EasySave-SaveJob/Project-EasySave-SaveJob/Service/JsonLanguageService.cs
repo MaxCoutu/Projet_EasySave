@@ -48,7 +48,7 @@ namespace Projet.Service
 
         public void Load(string fullPath)
         {
-            // Si fichier absent, on le génère complet
+            
             if (!File.Exists(fullPath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(fullPath) ?? ".");
@@ -57,12 +57,12 @@ namespace Projet.Service
                     isFr ? _defaultFr : _defaultEn);
             }
 
-            // Désérialise
+          
             var text = File.ReadAllText(fullPath);
             _dict = JsonSerializer.Deserialize<Dictionary<string, string>>(text)
                     ?? new Dictionary<string, string>();
 
-            // On complète avec les clés manquantes
+            
             var master = JsonSerializer.Deserialize<Dictionary<string, string>>(
                           fullPath.EndsWith("fr.json") ? _defaultFr : _defaultEn)
                          ?? new Dictionary<string, string>();

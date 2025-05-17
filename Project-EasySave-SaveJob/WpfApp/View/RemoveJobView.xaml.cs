@@ -11,6 +11,7 @@ namespace Projet.Wpf.View
         // Constructeur sans paramètre requis par WPF
         public RemoveJobView()
         {
+
             InitializeComponent();
         }
 
@@ -19,9 +20,9 @@ namespace Projet.Wpf.View
         {
             InitializeComponent();
 
-            var vm = new RemoveJobViewModel(mainVm.Svc);
+            //var vm = new RemoveJobViewModel(mainVm.Svc);
 
-            vm.Jobs.Clear();
+            /*m.Jobs.Clear();
             foreach (var job in mainVm.Jobs)
             {
                 vm.Jobs.Add(job);
@@ -34,7 +35,7 @@ namespace Projet.Wpf.View
                 mainVm.RefreshJobs();
                 // Pour un UserControl, il n'y a pas de Close()
                 // this.Visibility = Visibility.Collapsed; // si besoin
-            };
+            };*/
         }
     }
 }

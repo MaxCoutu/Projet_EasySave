@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows.Input;
+using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
 
@@ -9,8 +11,8 @@ namespace Projet.ViewModel
     public class MainViewModel : ViewModelBase
     {
         private readonly IBackupService _svc;
-
-        public IBackupService Svc => _svc;
+        private readonly ILanguageService _lang;
+        private readonly string _langDir;
 
         public ObservableCollection<BackupJob> Jobs { get; }
         private BackupJob _selected;
@@ -20,18 +22,16 @@ namespace Projet.ViewModel
             set { _selected = value; OnPropertyChanged(); }
         }
 
-        // Commandes déjà présentes
         public ICommand AddJobCmd { get; }
         public ICommand RemoveJobCmd { get; }
         public ICommand RunSelectedCmd { get; }
         public ICommand RunAllCmd { get; }
         public ICommand ShowAddJobViewCommand { get; }
         public ICommand ShowRemoveJobViewCommand { get; }
-
-        // ← NOUVEAU : commande pour lancer un job depuis la liste
         public ICommand RunJobCmd { get; }
+        public ICommand SetFrenchCommand { get; }
+        public ICommand SetEnglishCommand { get; }
 
-        // Gestion des vues
         private ViewModelBase _currentViewModel;
         public ViewModelBase CurrentViewModel
         {
@@ -42,12 +42,17 @@ namespace Projet.ViewModel
         public event Action AddJobRequested;
         public event Action RemoveJobRequested;
 
-        public MainViewModel(IBackupService svc)
+        public MainViewModel(
+            IBackupService svc,
+            ILanguageService langService,
+            IPathProvider paths)
         {
             _svc = svc;
+            _lang = langService;
+            _langDir = Path.Combine(paths.GetBaseDir(), "Languages");
+
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
 
-          
             AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
             RunSelectedCmd = new RelayCommand(_ => _svc.ExecuteBackupAsync(_selected?.Name));
@@ -55,16 +60,19 @@ namespace Projet.ViewModel
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => ShowRemoveJobView());
 
-            
             RunJobCmd = new RelayCommand(param =>
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
-                {
                     _svc.ExecuteBackupAsync(job.Name);
-                }
             });
 
-            
+            SetFrenchCommand = new RelayCommand(_ =>
+                _lang.Load(Path.Combine(_langDir, "fr.json")));
+            SetEnglishCommand = new RelayCommand(_ =>
+                _lang.Load(Path.Combine(_langDir, "en.json")));
+
+            _svc.StatusUpdated += s => { /* UI progress if needed */ };
+
             CurrentViewModel = this;
         }
 

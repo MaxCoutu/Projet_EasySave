@@ -31,15 +31,15 @@ namespace Projet
             ILanguageService lang = new JsonLanguageService(dictPath);
 
            
-            var mainVm = new MainViewModel(backup);
+            //var mainVm = new MainViewModel(backup);
             var addVm  = new AddJobViewModel(backup);
             var remVm  = new RemoveJobViewModel(backup);
 
             IAddJobView    addView = new ConsoleAddJobView(addVm, lang);
             IRemoveJobView remView = new ConsoleRemoveJobView(remVm, backup);
 
-            IMainView mainView = new ConsoleMainView(mainVm, lang, addView, remView, backup);
-            mainView.Show();
+            //IMainView mainView = new ConsoleMainView(mainVm, lang, addView, remView, backup);
+            //mainView.Show();
         }
     }
 }

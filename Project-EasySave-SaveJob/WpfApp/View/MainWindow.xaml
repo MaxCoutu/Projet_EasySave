@@ -1,170 +1,195 @@
 ﻿<Window x:Class="Projet.Wpf.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:Projet.Wpf.Localization"
         xmlns:local="clr-namespace:Projet.Wpf.View"
-        Title="Easy Save"
+        Title="{loc:Loc menu_title}"
         Height="600" Width="1000"
         WindowStartupLocation="CenterScreen"
         Background="#FF19173D"
         Foreground="White">
 
-    <Window.Resources>
-        <local:FolderNameConverter x:Key="FolderNameConverter"/>
+  <Window.Resources>
+    <local:FolderNameConverter x:Key="FolderNameConverter"/>
 
-        <!-- Style boutons arrondis -->
-        <Style x:Key="RoundedButton" TargetType="Button">
-            <Setter Property="Margin" Value="0,0,0,20"/>
-            <Setter Property="Height" Value="94"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="Black"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Padding" Value="20,0"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Background" Value="Gray"/>
-            <Setter Property="Opacity" Value="0.8"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="12">
-                            <ContentPresenter HorizontalAlignment="Left"
-                                              VerticalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Window.Resources>
+    <!-- Style boutons arrondis -->
+    <Style x:Key="RoundedButton" TargetType="Button">
+      <Setter Property="Margin" Value="0,0,0,20"/>
+      <Setter Property="Height" Value="85"/>
+      <Setter Property="FontSize" Value="18"/>
+      <Setter Property="FontWeight" Value="Black"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="Padding" Value="20,0"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Background" Value="Gray"/>
+      <Setter Property="Opacity" Value="0.8"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}"
+                    CornerRadius="12">
+              <ContentPresenter HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Margin="{TemplateBinding Padding}"/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
 
-    <Grid Margin="30,20,20,20">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="299"/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
+  <Grid Margin="30,20,20,20">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="299"/>
+      <ColumnDefinition/>
+    </Grid.ColumnDefinitions>
 
-        <!-- ============ SIDEBAR ============ -->
-        <StackPanel Grid.Column="0" Margin="0,74,4,0">
-            <!-- Create -->
-            <Button Style="{StaticResource RoundedButton}"
-                    Background="#FF7428D7"
-                    Command="{Binding ShowAddJobViewCommand}" Height="85">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Create a&#x0a;Backup job"
-                               Width="180" TextWrapping="Wrap"/>
-                    <Image Source="C:\Users\jmail\Downloads\pen-field-svgrepo-com.png"
-                           Width="57" Height="57" Margin="10,0,0,0"/>
-                </StackPanel>
-            </Button>
-
-            <!-- Choose -->
-            <Button Style="{StaticResource RoundedButton}"
-                    Background="#FF0E73C5"
-                    Command="{Binding ChooseJobCommand}" Margin="0,20,0,20">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Choose a&#x0a;Backup job to run"
-                               Width="180" TextWrapping="Wrap"/>
-                    <Image Source="C:\Users\jmail\Downloads\target-arrow-svgrepo-com.png"
-                           Width="57" Height="57" Margin="10,0,0,0"/>
-                </StackPanel>
-            </Button>
-
-            <!-- Run All -->
-            <Button Style="{StaticResource RoundedButton}"
-                    Background="#FFF5AC6E"
-                    Command="{Binding RunAllCmd}" Margin="0,20,0,20">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Run all&#x0a;Backup jobs"
-                               Width="180" TextWrapping="Wrap"/>
-                    <Image Source="C:\Users\jmail\Downloads\multiple-svgrepo-com (1).png"
-                           Width="57" Height="57" Margin="10,0,0,0"/>
-                </StackPanel>
-            </Button>
-
-            <!-- Spacer -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,20,0,0">
-                <Button Background="Transparent" BorderThickness="0"
-                        Command="{Binding OpenSettingsCommand}" Margin="20,0,0,0">
-                    <Image Source="C:\Users\jmail\Downloads\settings-svgrepo-com.png"
-                           Width="44" Height="44"/>
-                </Button>
-                <Button Background="Transparent" BorderThickness="0"
-                        Command="{Binding SetFrenchCommand}" Margin="60,0,0,0">
-                    <Image Source="C:\Users\jmail\Downloads\flag-wf-svgrepo-com.png"
-                           Width="45" Height="43"/>
-                </Button>
-                <Button Background="Transparent" BorderThickness="0"
-                        Command="{Binding SetEnglishCommand}" Margin="10,0,0,0">
-                    <Image Source="C:\Users\jmail\Downloads\flag-gb-svgrepo-com.png"
-                           Width="45" Height="42"/>
-                </Button>
-            </StackPanel>
+    <!-- SIDEBAR -->
+    <StackPanel Grid.Column="0" Margin="0,74,4,0">
+      <!-- Create -->
+      <Button Style="{StaticResource RoundedButton}"
+              Background="#FF7428D7"
+              Command="{Binding ShowAddJobViewCommand}">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="{loc:Loc menu_create}"
+                     Width="180" TextWrapping="Wrap"/>
+          <Image Source="C:\Users\jmail\Downloads\pen-field-svgrepo-com.png"
+                 Width="57" Height="57" Margin="10,0,0,0"/>
         </StackPanel>
+      </Button>
 
-        <!-- ============ MAIN PANEL ============ -->
-        <Border Grid.Column="1"
-                Background="#FF25234E"
-                CornerRadius="15"
-                Padding="20"
-                BorderBrush="#FF3B3A5E"
-                BorderThickness="1" Margin="30,10,0,10">
-            <ScrollViewer VerticalScrollBarVisibility="Disabled" Margin="1,0,0,0">
+      <!-- Choose -->
+      <Button Style="{StaticResource RoundedButton}"
+              Background="#FF0E73C5"
+              Command="{Binding ChooseJobCommand}">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="{loc:Loc menu_choose}"
+                     Width="180" TextWrapping="Wrap"/>
+          <Image Source="C:\Users\jmail\Downloads\target-arrow-svgrepo-com.png"
+                 Width="57" Height="57" Margin="10,0,0,0"/>
+        </StackPanel>
+      </Button>
 
-                <StackPanel>
-                    <!-- Title -->
-                    <TextBlock Text="Recent Backup jobs Launched"
-                               FontSize="40"
-                               FontWeight="Bold"
-                               Foreground="#CCFFFFFF"
-                               Opacity="0.8"
-                               Margin="0,0,0,20" HorizontalAlignment="Center"/>
+      <!-- Run All -->
+      <Button Style="{StaticResource RoundedButton}"
+              Background="#FFF5AC6E"
+              Command="{Binding RunAllCmd}">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="{loc:Loc menu_runall}"
+                     Width="180" TextWrapping="Wrap"/>
+          <Image Source="C:\Users\jmail\Downloads\multiple-svgrepo-com (1).png"
+                 Width="57" Height="57" Margin="10,0,0,0"/>
+        </StackPanel>
+      </Button>
 
-                    <!-- Items list -->
-                    <ItemsControl ItemsSource="{Binding Jobs}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="12"
-                                        Background="#FF33345A"
-                                        Margin="0,0,0,10"
-                                        Padding="15">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Name}"
-                                                    FontSize="18" FontWeight="Bold"
-                                                     Foreground="White"/>
-                                                <TextBlock Text="{Binding Strategy.Type}"
-                                                    FontSize="18" FontStyle="Italic"
-                                                    Foreground="#CCCCCC"
-                                                    Margin="8,0,0,0"/>
-                                            </StackPanel>
-                                            <TextBlock FontSize="12" Opacity="0.7"
-                                                       Text="{Binding SourceDir
-                                                              }"
-                                                       Margin="0,5,0,0"/>
-                                            <TextBlock FontSize="12" Opacity="0.7"
-                                                       Text="{Binding TargetDir}"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Width="40" Height="40"
-                                                Background="Transparent" BorderThickness="0"
-                                                Command="{Binding DataContext.RunJobCmd,
-                                                  RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}">
-                                            <Path Data="M0,0 L0,20 L18,10 Z" Fill="White"
-                                                  Stretch="Uniform"/>
-                                        </Button>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-    </Grid>
+      <!-- Spacer -->
+      <StackPanel Orientation="Horizontal"
+                  HorizontalAlignment="Left"
+                  Margin="0,20,0,0">
+        <Button Background="Transparent" BorderThickness="0"
+                Command="{Binding OpenSettingsCommand}"
+                ToolTip="{loc:Loc menu_settings}">
+          <Image Source="C:\Users\jmail\Downloads\settings-svgrepo-com.png"
+                 Width="44" Height="44"/>
+        </Button>
+        <Button Background="Transparent" BorderThickness="0"
+                Command="{Binding SetFrenchCommand}"
+                Margin="60,0,0,0">
+          <Image Source="C:\Users\jmail\Downloads\flag-wf-svgrepo-com.png"
+                 Width="45" Height="43"/>
+        </Button>
+        <Button Background="Transparent" BorderThickness="0"
+                Command="{Binding SetEnglishCommand}"
+                Margin="10,0,0,0">
+          <Image Source="C:\Users\jmail\Downloads\flag-gb-svgrepo-com.png"
+                 Width="45" Height="42"/>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+
+    <!-- MAIN PANEL -->
+    <Border Grid.Column="1"
+            Background="#FF25234E"
+            CornerRadius="15"
+            Padding="20"
+            BorderBrush="#FF3B3A5E"
+            BorderThickness="1"
+            Margin="30,10,0,10">
+      <ScrollViewer VerticalScrollBarVisibility="Disabled">
+        <StackPanel>
+          <!-- Title -->
+          <TextBlock Text="{loc:Loc recent_title}"
+                     FontSize="40"
+                     FontWeight="Bold"
+                     Foreground="#CCFFFFFF"
+                     Opacity="0.8"
+                     Margin="0,0,0,20"
+                     HorizontalAlignment="Center"/>
+
+          <!-- Items list -->
+          <ItemsControl ItemsSource="{Binding Jobs}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border CornerRadius="12"
+                        Background="#FF33345A"
+                        Margin="0,0,0,10"
+                        Padding="15">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition/>
+                      <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel>
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+                        <TextBlock Text="{Binding Strategy.Type}"
+                                   FontSize="18"
+                                   FontStyle="Italic"
+                                   Foreground="#CCCCCC"
+                                   Margin="8,0,0,0"/>
+                      </StackPanel>
+
+                      <TextBlock FontSize="12"
+                                 Opacity="0.7"
+                                 TextWrapping="Wrap">
+                        <Run Text="{loc:Loc src_label}"/>
+                        <Run Text=" "/>
+                        <Run Text="{Binding SourceDir, Converter={StaticResource FolderNameConverter}}"/>
+                      </TextBlock>
+
+                      <TextBlock FontSize="12"
+                                 Opacity="0.7"
+                                 TextWrapping="Wrap">
+                        <Run Text="{loc:Loc dst_label}"/>
+                        <Run Text=" "/>
+                        <Run Text="{Binding TargetDir, Converter={StaticResource FolderNameConverter}}"/>
+                      </TextBlock>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Width="40" Height="40"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Command="{Binding DataContext.RunJobCmd,
+                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"
+                            ToolTip="{loc:Loc play_tooltip}">
+                      <Path Data="M0,0 L0,20 L18,10 Z"
+                            Fill="White"
+                            Stretch="Uniform"/>
+                    </Button>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
 </Window>
