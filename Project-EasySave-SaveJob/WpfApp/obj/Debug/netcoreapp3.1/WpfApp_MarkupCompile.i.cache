@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\
+C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\
 WpfApp
 none
 false
 TRACE;DEBUG;NETCOREAPP;NETCOREAPP3_1;;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER
-C:\Users\Maxendre\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\App.xaml
-11407045341
+C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\App.xaml
+3-126865545
 
-51816498196
-193-1317269453
-MainWindow.xaml;
+8705314202
+193-1057636416
+View\AddJobView.xaml;View\MainWindow.xaml;View\RemoveJobView.xaml;
 
-False
+True
 

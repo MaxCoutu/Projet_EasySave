@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
 
@@ -21,23 +20,23 @@ namespace Projet.ViewModel
             set { _selected = value; OnPropertyChanged(); }
         }
 
+        // Commandes déjà présentes
         public ICommand AddJobCmd { get; }
         public ICommand RemoveJobCmd { get; }
         public ICommand RunSelectedCmd { get; }
         public ICommand RunAllCmd { get; }
-
         public ICommand ShowAddJobViewCommand { get; }
         public ICommand ShowRemoveJobViewCommand { get; }
 
+        // ← NOUVEAU : commande pour lancer un job depuis la liste
+        public ICommand RunJobCmd { get; }
+
+        // Gestion des vues
         private ViewModelBase _currentViewModel;
         public ViewModelBase CurrentViewModel
         {
             get => _currentViewModel;
-            set
-            {
-                _currentViewModel = value;
-                OnPropertyChanged();
-            }
+            set { _currentViewModel = value; OnPropertyChanged(); }
         }
 
         public event Action AddJobRequested;
@@ -48,17 +47,24 @@ namespace Projet.ViewModel
             _svc = svc;
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
 
+          
             AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
             RunSelectedCmd = new RelayCommand(_ => _svc.ExecuteBackupAsync(_selected?.Name));
             RunAllCmd = new RelayCommand(_ => _svc.ExecuteAllBackupsAsync());
-
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => ShowRemoveJobView());
 
-            _svc.StatusUpdated += s => { /* Optionnel : mise à jour de l’UI */ };
+            
+            RunJobCmd = new RelayCommand(param =>
+            {
+                if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
+                {
+                    _svc.ExecuteBackupAsync(job.Name);
+                }
+            });
 
-            // Vue par défaut
+            
             CurrentViewModel = this;
         }
 

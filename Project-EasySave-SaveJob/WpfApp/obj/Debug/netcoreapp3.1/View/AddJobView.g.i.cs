@@ -52,7 +52,7 @@ namespace Projet.Wpf.View {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/WpfApp;component/view/addjobview.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/WpfApp;V1.0.0.0;component/view/addjobview.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\View\AddJobView.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

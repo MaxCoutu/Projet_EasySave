@@ -1,8 +1,8 @@
 {
   "runtimeOptions": {
     "additionalProbingPaths": [
-      "C:\\Users\\Maxendre\\.dotnet\\store\\|arch|\\|tfm|",
-      "C:\\Users\\Maxendre\\.nuget\\packages",
+      "C:\\Users\\jmail\\.dotnet\\store\\|arch|\\|tfm|",
+      "C:\\Users\\jmail\\.nuget\\packages",
       "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
     ]
   }

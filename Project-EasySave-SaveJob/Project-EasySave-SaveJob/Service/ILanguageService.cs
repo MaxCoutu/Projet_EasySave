@@ -7,5 +7,7 @@ namespace Projet.Service
     public interface ILanguageService
     {
         string Translate(string key);
+        event Action LanguageChanged;
+        void Load(string fullPath);
     }
 }

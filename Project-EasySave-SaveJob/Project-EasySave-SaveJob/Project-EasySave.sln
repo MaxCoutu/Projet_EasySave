@@ -7,6 +7,16 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project-EasySave", "Project
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfApp", "..\WpfApp\WpfApp.csproj", "{801DC297-9A6E-4CC7-BBF7-22F1A8B2892A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "image", "image", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		..\..\..\..\..\..\Downloads\flag-gb-svgrepo-com.png = ..\..\..\..\..\..\Downloads\flag-gb-svgrepo-com.png
+		..\..\..\..\..\..\Downloads\flag-wf-svgrepo-com.png = ..\..\..\..\..\..\Downloads\flag-wf-svgrepo-com.png
+		..\..\..\..\..\..\Downloads\multiple-svgrepo-com (1).png = ..\..\..\..\..\..\Downloads\multiple-svgrepo-com (1).png
+		..\..\..\..\..\..\Downloads\pen-field-svgrepo-com.png = ..\..\..\..\..\..\Downloads\pen-field-svgrepo-com.png
+		..\..\..\..\..\..\Downloads\settings-svgrepo-com.png = ..\..\..\..\..\..\Downloads\settings-svgrepo-com.png
+		..\..\..\..\..\..\Downloads\target-arrow-svgrepo-com.png = ..\..\..\..\..\..\Downloads\target-arrow-svgrepo-com.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

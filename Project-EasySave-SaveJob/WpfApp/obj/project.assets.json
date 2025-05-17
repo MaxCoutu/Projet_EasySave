@@ -27,23 +27,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Maxendre\\.nuget\\packages\\": {},
+    "C:\\Users\\jmail\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Maxendre\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj",
+      "projectUniqueName": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj",
       "projectName": "WpfApp",
-      "projectPath": "C:\\Users\\Maxendre\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj",
-      "packagesPath": "C:\\Users\\Maxendre\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Maxendre\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\obj\\",
+      "projectPath": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj",
+      "packagesPath": "C:\\Users\\jmail\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Maxendre\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\jmail\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -59,8 +59,8 @@
         "netcoreapp3.1": {
           "targetAlias": "netcoreapp3.1",
           "projectReferences": {
-            "C:\\Users\\Maxendre\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\Project-EasySave.csproj": {
-              "projectPath": "C:\\Users\\Maxendre\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\Project-EasySave.csproj"
+            "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\Project-EasySave.csproj": {
+              "projectPath": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\Project-EasySave.csproj"
             }
           }
         }
