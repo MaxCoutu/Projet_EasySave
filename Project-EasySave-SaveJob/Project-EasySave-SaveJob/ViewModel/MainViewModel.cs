@@ -57,7 +57,7 @@ namespace Projet.ViewModel
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
             RunSelectedCmd = new RelayCommand(_ => _svc.ExecuteBackupAsync(_selected?.Name));
             RunAllCmd = new RelayCommand(_ => _svc.ExecuteAllBackupsAsync());
-            ShowAddJobViewCommand = new RelayCommand(_ => AddJobRequested?.Invoke());
+            ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => RemoveJobRequested?.Invoke());
 
             RunJobCmd = new RelayCommand(param =>
