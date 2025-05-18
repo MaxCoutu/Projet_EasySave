@@ -19,7 +19,6 @@ namespace Projet.ViewModel
             _svc = svc ?? throw new ArgumentNullException(nameof(svc));
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
 
-            // Commande pour lancer un job
             RunJobCmd = new RelayCommand(async param =>
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))

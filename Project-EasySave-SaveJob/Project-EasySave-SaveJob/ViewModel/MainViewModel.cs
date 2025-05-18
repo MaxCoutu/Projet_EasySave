@@ -72,8 +72,6 @@ namespace Projet.ViewModel
 
             AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
-
-            // Commande pour lancer le job sélectionné
             RunSelectedCmd = new RelayCommand(async _ =>
             {
                 if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
@@ -81,18 +79,14 @@ namespace Projet.ViewModel
                     await _svc.ExecuteBackupAsync(_selected.Name);
                 }
             });
-
-            // Commande pour lancer tous les jobs
             RunAllCmd = new RelayCommand(async _ =>
             {
                 await _svc.ExecuteAllBackupsAsync();
             });
-
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => RemoveJobRequested?.Invoke());
 
-            // Commande pour lancer un job spécifique
             RunJobCmd = new RelayCommand(async param =>
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
@@ -107,6 +101,7 @@ namespace Projet.ViewModel
                 _lang.Load(Path.Combine(_langDir, "en.json")));
 
             OpenSettingsCommand = new RelayCommand(_ => { /* Logique pour ouvrir les paramètres */ });
+
             ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
 
             _svc.StatusUpdated += s => { RefreshJobs(); LoadRecentJobs(); };
@@ -125,28 +120,51 @@ namespace Projet.ViewModel
         {
             RecentJobs.Clear();
             string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
-            if (!File.Exists(statusPath)) return;
+            if (!File.Exists(statusPath))
+                return;
 
-            string json = File.ReadAllText(statusPath);
-            if (string.IsNullOrWhiteSpace(json)) return;
-
-            var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
-            if (statusEntries == null || statusEntries.Count == 0) return;
-
-            var distinctEntries = statusEntries
-                .Where(e => !string.IsNullOrWhiteSpace(e.Name))
-                .GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.First())
-                .Take(3)
-                .ToList();
-
-            foreach (var entry in distinctEntries)
+            try
             {
-                var job = Jobs.FirstOrDefault(j => string.Equals(j.Name?.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase));
-                if (job != null)
+                string json = File.ReadAllText(statusPath);
+                if (string.IsNullOrWhiteSpace(json))
+                    return;
+
+                var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
+                if (statusEntries == null || statusEntries.Count == 0)
+                    return;
+
+              
+               
+
+                var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var recentJobs = new List<BackupJob>();
+
+                
+                foreach (var entry in statusEntries)
+                {
+                    if (!addedJobs.Contains(entry.Name))
+                    {
+                        var job = Jobs.FirstOrDefault(j => string.Equals(j.Name?.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+                        if (job != null)
+                        {
+                            recentJobs.Add(job);
+                            addedJobs.Add(entry.Name);
+                            if (recentJobs.Count == 3)
+                                break;
+                        }
+                    }
+                }
+
+                
+                recentJobs.Reverse();
+                foreach (var job in recentJobs)
                 {
                     RecentJobs.Add(job);
                 }
+            }
+            catch
+            {
+                RecentJobs.Clear();
             }
         }
 
