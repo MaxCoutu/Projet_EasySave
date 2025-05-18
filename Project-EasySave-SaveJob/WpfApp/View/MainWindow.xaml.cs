@@ -11,30 +11,26 @@ namespace Projet.Wpf.View
         public MainWindow()
         {
             InitializeComponent();
-
-            // Injecter BackupService, LanguageService et PathProvider
-            _vm = new MainViewModel(
-                App.BackupService,
-                App.LanguageService,
-                App.PathProvider);
-
+            _vm = new MainViewModel(App.BackupService, App.LanguageService, App.PathProvider);
             DataContext = _vm;
 
-            // vos événements existants pour changer de vue
+           
             _vm.AddJobRequested += ShowAddJobView;
-            _vm.RemoveJobRequested += ShowRemoveJobView;
+
+            
+            var addJobVm = new AddJobViewModel(App.BackupService);
+            addJobVm.JobAdded += () =>
+            {
+                this.Content = new MainWindow().Content;
+                _vm.RefreshJobs(); 
+            };
         }
 
         private void ShowAddJobView()
         {
-            var view = new AddJobView(_vm);
-            this.Content = view;
-        }
-
-        private void ShowRemoveJobView()
-        {
-            var view = new RemoveJobView(_vm);
-            this.Content = view;
+            var addJobView = new AddJobView();
+            addJobView.DataContext = new AddJobViewModel(App.BackupService);
+            this.Content = addJobView;
         }
     }
 }

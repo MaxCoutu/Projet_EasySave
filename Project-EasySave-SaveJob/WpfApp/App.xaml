@@ -4,14 +4,12 @@
              xmlns:vm="clr-namespace:Projet.ViewModel;assembly=Project-EasySave"
              xmlns:view="clr-namespace:Projet.Wpf.View"
              StartupUri="View/MainWindow.xaml">
-
-	<Application.Resources>
-		<!-- Supprimé le DataTemplate pour MainViewModel car MainView n'existe pas -->
-		<DataTemplate DataType="{x:Type vm:AddJobViewModel}">
-			<view:AddJobView />
-		</DataTemplate>
-		<DataTemplate DataType="{x:Type vm:RemoveJobViewModel}">
-			<view:RemoveJobView />
-		</DataTemplate>
-	</Application.Resources>
+    <Application.Resources>
+        <DataTemplate DataType="{x:Type vm:AddJobViewModel}">
+            <view:AddJobView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:RemoveJobViewModel}">
+            <view:RemoveJobView />
+        </DataTemplate>
+    </Application.Resources>
 </Application>

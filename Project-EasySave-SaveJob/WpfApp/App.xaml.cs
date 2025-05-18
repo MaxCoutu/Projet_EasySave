@@ -17,21 +17,17 @@ namespace WpfApp
         {
             base.OnStartup(e);
 
-            
             PathProvider = new DefaultPathProvider();
             string baseDir = PathProvider.GetBaseDir();
 
-            
             var settings = Settings.Load(PathProvider);
             var logger = new JsonLogger(PathProvider);
             var repo = new TxtJobRepository(PathProvider);
             BackupService = new BackupService(logger, repo, settings);
 
-            
             Directory.CreateDirectory(Path.Combine(baseDir, "Languages"));
             string en = Path.Combine(baseDir, "Languages", "en.json");
             LanguageService = new JsonLanguageService(en);
-
         }
     }
 }
