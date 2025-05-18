@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.Windows.Input;
 using Projet.Infrastructure;
 using Projet.Model;
@@ -13,8 +16,16 @@ namespace Projet.ViewModel
         private readonly IBackupService _svc;
         private readonly ILanguageService _lang;
         private readonly string _langDir;
+        private readonly IPathProvider _paths;
 
         public ObservableCollection<BackupJob> Jobs { get; }
+        private ObservableCollection<BackupJob> _recentJobs;
+        public ObservableCollection<BackupJob> RecentJobs
+        {
+            get => _recentJobs;
+            set { _recentJobs = value; OnPropertyChanged(); }
+        }
+
         private BackupJob _selected;
         public BackupJob SelectedJob
         {
@@ -52,22 +63,42 @@ namespace Projet.ViewModel
         {
             _svc = svc;
             _lang = langService;
+            _paths = paths;
             _langDir = Path.Combine(paths.GetBaseDir(), "Languages");
 
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
+            RecentJobs = new ObservableCollection<BackupJob>();
+            LoadRecentJobs();
 
             AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
-            RunSelectedCmd = new RelayCommand(_ => _svc.ExecuteBackupAsync(_selected?.Name));
-            RunAllCmd = new RelayCommand(_ => _svc.ExecuteAllBackupsAsync());
+
+            // Commande pour lancer le job sélectionné
+            RunSelectedCmd = new RelayCommand(async _ =>
+            {
+                if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
+                {
+                    await _svc.ExecuteBackupAsync(_selected.Name);
+                }
+            });
+
+            // Commande pour lancer tous les jobs
+            RunAllCmd = new RelayCommand(async _ =>
+            {
+                await _svc.ExecuteAllBackupsAsync();
+            });
+
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => RemoveJobRequested?.Invoke());
 
-            RunJobCmd = new RelayCommand(param =>
+            // Commande pour lancer un job spécifique
+            RunJobCmd = new RelayCommand(async param =>
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
-                    _svc.ExecuteBackupAsync(job.Name);
+                {
+                    await _svc.ExecuteBackupAsync(job.Name);
+                }
             });
 
             SetFrenchCommand = new RelayCommand(_ =>
@@ -76,10 +107,9 @@ namespace Projet.ViewModel
                 _lang.Load(Path.Combine(_langDir, "en.json")));
 
             OpenSettingsCommand = new RelayCommand(_ => { /* Logique pour ouvrir les paramètres */ });
-
             ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
 
-            _svc.StatusUpdated += s => { /* UI progress if needed */ };
+            _svc.StatusUpdated += s => { RefreshJobs(); LoadRecentJobs(); };
 
             CurrentViewModel = this;
         }
@@ -91,25 +121,50 @@ namespace Projet.ViewModel
                 Jobs.Add(job);
         }
 
+        private void LoadRecentJobs()
+        {
+            RecentJobs.Clear();
+            string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
+            if (!File.Exists(statusPath)) return;
+
+            string json = File.ReadAllText(statusPath);
+            if (string.IsNullOrWhiteSpace(json)) return;
+
+            var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
+            if (statusEntries == null || statusEntries.Count == 0) return;
+
+            var distinctEntries = statusEntries
+                .Where(e => !string.IsNullOrWhiteSpace(e.Name))
+                .GroupBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .Take(3)
+                .ToList();
+
+            foreach (var entry in distinctEntries)
+            {
+                var job = Jobs.FirstOrDefault(j => string.Equals(j.Name?.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (job != null)
+                {
+                    RecentJobs.Add(job);
+                }
+            }
+        }
+
         private void ShowAddJobView()
         {
-            CurrentViewModel = new AddJobViewModel(_svc);
+            var vm = new AddJobViewModel(_svc);
+            vm.JobAdded += () =>
+            {
+                RefreshJobs();
+                LoadRecentJobs();
+                CurrentViewModel = this;
+            };
+            CurrentViewModel = vm;
         }
 
         private void ShowChooseJobView()
         {
             CurrentViewModel = new ChooseJobViewModel(_svc);
-        }
-
-        private void ShowRemoveJobView()
-        {
-            var vm = new RemoveJobViewModel(_svc);
-            vm.JobRemoved += () =>
-            {
-                RefreshJobs();
-                CurrentViewModel = this;
-            };
-            CurrentViewModel = vm;
         }
     }
 }

@@ -39,9 +39,12 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <!-- Nouvelle colonne pour le bouton de suppression -->
+                                        <ColumnDefinition Width="Auto"/>
+                                        <!-- Colonne pour le bouton "Run" -->
                                     </Grid.ColumnDefinitions>
 
-                                    <StackPanel>
+                                    <StackPanel Grid.Column="0">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{Binding Name}"
                                                        FontSize="18"
@@ -71,7 +74,21 @@
                                         </TextBlock>
                                     </StackPanel>
 
+                                    <!-- Bouton de suppression -->
                                     <Button Grid.Column="1"
+                                            Width="25" Height="25"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Margin="0,0,10,0"
+                                            Command="{Binding DataContext.RemoveJobCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip="{loc:Loc delete_tooltip}">
+                                        <Image Source="/Resources/delete-icon.png" Width="20" Height="20"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Button>
+
+                                    <!-- Bouton "Run" -->
+                                    <Button Grid.Column="2"
                                             Width="25" Height="25"
                                             Background="Transparent"
                                             BorderThickness="0"

@@ -1,22 +1,24 @@
 using System;
 using System.Globalization;
-using System.IO;
 using System.Windows.Data;
 
 namespace Projet.Wpf.View
 {
-
     public class FolderNameConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var path = value as string;
-            if (string.IsNullOrEmpty(path)) return "";
-            return Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (value is string path && !string.IsNullOrWhiteSpace(path))
+            {
+                // Supprime les guillemets au début et à la fin du chemin
+                return path.Trim('"');
+            }
+            return value;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-            => throw new NotImplementedException();
+        {
+            throw new NotImplementedException();
+        }
     }
 }
-

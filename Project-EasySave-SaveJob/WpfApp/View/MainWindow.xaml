@@ -38,6 +38,23 @@
             </Setter>
         </Style>
 
+        <!-- Style pour le bouton Retour -->
+        <Style x:Key="BackButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- DataTemplate pour la vue principale -->
         <DataTemplate x:Key="MainViewTemplate">
             <Grid Margin="30,20,20,20">
@@ -129,7 +146,7 @@
                                        HorizontalAlignment="Center"/>
 
                             <!-- Items list -->
-                            <ItemsControl ItemsSource="{Binding Jobs}">
+                            <ItemsControl ItemsSource="{Binding RecentJobs}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border CornerRadius="12"
@@ -152,12 +169,13 @@
                                                                    FontSize="18"
                                                                    FontStyle="Italic"
                                                                    Foreground="#CCCCCC"
-                                                                   Margin="8,0,0,0"/>
+                                                                   Margin="25,0,0,0"/>
                                                     </StackPanel>
 
                                                     <TextBlock FontSize="12"
                                                                Opacity="0.7"
-                                                               TextWrapping="Wrap">
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,10,0,5">
                                                         <Run Text="{loc:Loc src_label}"/>
                                                         <Run Text=" "/>
                                                         <Run Text="{Binding SourceDir, Converter={StaticResource FolderNameConverter}}"/>
@@ -193,23 +211,6 @@
                 </Border>
             </Grid>
         </DataTemplate>
-
-        <!-- Style pour le bouton Retour -->
-        <Style x:Key="BackButtonStyle" TargetType="Button">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="10">
-                            <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </Window.Resources>
 
     <Grid>
@@ -263,13 +264,12 @@
 
         <!-- Bouton Retour -->
         <Button Command="{Binding ReturnToMainViewCommand}" 
-                Height="35" Width="50" 
-                Background="#FF555555" Foreground="White" 
+                Height="50" Width="50" 
+                Background="Transparent"
                 BorderThickness="0"
-              
                 HorizontalAlignment="Left"
                 VerticalAlignment="Bottom"
-                Margin="20,0,0,20">
+                Margin="50,0,0,30">
             <Button.Style>
                 <Style TargetType="Button" BasedOn="{StaticResource BackButtonStyle}">
                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -283,7 +283,7 @@
                     </Style.Triggers>
                 </Style>
             </Button.Style>
-            <Image Source="/Resources/back-icon.png" Width="20" Height="20"
+            <Image Source="C:\Users\jmail\Downloads\chevron-left-circle-svgrepo-com.png" Width="50" Height="50"
                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Button>
     </Grid>

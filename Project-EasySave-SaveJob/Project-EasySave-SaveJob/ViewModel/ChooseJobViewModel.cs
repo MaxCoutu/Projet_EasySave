@@ -12,16 +12,29 @@ namespace Projet.ViewModel
         private readonly IBackupService _svc;
         public ObservableCollection<BackupJob> Jobs { get; }
         public ICommand RunJobCmd { get; }
-        public event Action JobSelected;
+        public ICommand RemoveJobCmd { get; }
 
         public ChooseJobViewModel(IBackupService svc)
         {
-            _svc = svc;
+            _svc = svc ?? throw new ArgumentNullException(nameof(svc));
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
-            RunJobCmd = new RelayCommand(param =>
+
+            // Commande pour lancer un job
+            RunJobCmd = new RelayCommand(async param =>
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
-                    _svc.ExecuteBackupAsync(job.Name);
+                {
+                    await _svc.ExecuteBackupAsync(job.Name);
+                }
+            });
+
+            RemoveJobCmd = new RelayCommand(param =>
+            {
+                if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
+                {
+                    _svc.RemoveJob(job.Name);
+                    RefreshJobs();
+                }
             });
         }
 

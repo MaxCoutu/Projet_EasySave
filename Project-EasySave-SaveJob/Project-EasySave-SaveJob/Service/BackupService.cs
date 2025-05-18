@@ -25,14 +25,12 @@ namespace Projet.Service
             _jobs = new List<BackupJob>(_repo.Load());
         }
 
-        // Renommé ici en AddJob
         public void AddJob(BackupJob job)
         {
             _jobs.Add(job);
             _repo.Save(_jobs);
         }
 
-        // Renommé ici en RemoveJob
         public void RemoveJob(string name)
         {
             _jobs.RemoveAll(j => j.Name == name);
@@ -49,71 +47,118 @@ namespace Projet.Service
                 return;
             }
 
-            var job = _jobs.First(j => j.Name == name);
+            var job = _jobs.FirstOrDefault(j => j.Name == name);
+            if (job == null)
+            {
+                Console.WriteLine($"Job '{name}' not found.");
+                return;
+            }
+
             Report(new StatusEntry { Name = job.Name, State = "PENDING" });
-            await ProcessJobAsync(job);
+
+            try
+            {
+                await ProcessJobAsync(job);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur lors de l'exécution du backup '{job.Name}' : {ex.Message}");
+            }
+
             Report(new StatusEntry { Name = job.Name, State = "END" });
         }
 
         public async Task ExecuteAllBackupsAsync()
         {
-            foreach (var j in _jobs)
+            foreach (var job in _jobs)
             {
                 if (PackageBlocker.IsBlocked(_settings)) break;
-                await ExecuteBackupAsync(j.Name);
+                await ExecuteBackupAsync(job.Name);
             }
         }
 
         private async Task ProcessJobAsync(BackupJob job)
         {
-            var files = Directory.EnumerateFiles(job.SourceDir, "*", SearchOption.AllDirectories).ToList();
-            long totalSize = files.Sum(f => new FileInfo(f).Length);
-            int total = files.Count, left = total;
+            // Nettoyer les chemins
+            string cleanedSourceDir = job.SourceDir.Trim('"').Trim();
+            string cleanedTargetDir = job.TargetDir.Trim('"').Trim();
 
-            foreach (string src in files)
+            // Vérifier l'existence du répertoire source
+            if (!Directory.Exists(cleanedSourceDir))
             {
-                if (PackageBlocker.IsBlocked(_settings))
+                throw new DirectoryNotFoundException($"Le répertoire source '{cleanedSourceDir}' n'existe pas.");
+            }
+
+            // Créer le répertoire cible s'il n'existe pas
+            if (!Directory.Exists(cleanedTargetDir))
+            {
+                Directory.CreateDirectory(cleanedTargetDir);
+            }
+
+            try
+            {
+                var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
+                long totalSize = files.Sum(f => new FileInfo(f).Length);
+                int total = files.Count, left = total;
+
+                foreach (string src in files)
                 {
-                    Environment.Exit(1);
+                    if (PackageBlocker.IsBlocked(_settings))
+                    {
+                        Console.WriteLine("Backup interrompu : package bloqué.");
+                        Environment.Exit(1);
+                    }
+
+                    string rel = Path.GetRelativePath(cleanedSourceDir, src);
+                    string dest = Path.Combine(cleanedTargetDir, rel);
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
+
+                    var swCopy = System.Diagnostics.Stopwatch.StartNew();
+                    await Task.Run(() => File.Copy(src, dest, true));
+                    swCopy.Stop();
+
+                    int encMs = 0;
+                    if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
+                    {
+                        encMs = CryptoSoftHelper.Encrypt(dest, _settings);
+                    }
+
+                    _logger.LogEvent(new LogEntry
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        JobName = job.Name,
+                        SourcePath = src,
+                        DestPath = dest,
+                        FileSize = new FileInfo(src).Length,
+                        TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
+                        EncryptionTimeMs = encMs
+                    });
+
+                    left--;
+                    Report(new StatusEntry
+                    {
+                        Name = job.Name,
+                        SourceFilePath = src,
+                        TargetFilePath = dest,
+                        State = "ACTIVE",
+                        TotalFilesToCopy = total,
+                        TotalFilesSize = totalSize,
+                        NbFilesLeftToDo = left,
+                        Progression = (total - left) / (double)total
+                    });
                 }
-                string rel = Path.GetRelativePath(job.SourceDir, src);
-                string dest = Path.Combine(job.TargetDir, rel);
-                Directory.CreateDirectory(Path.GetDirectoryName(dest));
-
-                var swCopy = System.Diagnostics.Stopwatch.StartNew();
-                await Task.Run(() => File.Copy(src, dest, true));
-                swCopy.Stop();
-
-                int encMs = 0;
-                if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
-                {
-                    encMs = CryptoSoftHelper.Encrypt(dest, _settings);
-                    _ = CryptoSoftHelper.Encrypt(dest, _settings);
-                }
-
-                _logger.LogEvent(new LogEntry
-                {
-                    Timestamp = DateTime.UtcNow,
-                    JobName = job.Name,
-                    SourcePath = src,
-                    DestPath = dest,
-                    FileSize = new FileInfo(src).Length,
-                    TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
-                    EncryptionTimeMs = encMs
-                });
-
-                left--;
-                Report(new StatusEntry
-                {
-                    Name = job.Name,
-                    SourceFilePath = src,
-                    TargetFilePath = dest,
-                    State = "ACTIVE",
-                    TotalFilesToCopy = total,
-                    TotalFilesSize = totalSize,
-                    NbFilesLeftToDo = left,
-                    Progression = (total - left) / (double)total
-                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new UnauthorizedAccessException($"Accès refusé au répertoire '{cleanedSourceDir}' : {ex.Message}", ex);
+            }
+            catch (IOException ex)
+            {
+                throw new IOException($"Erreur d'E/S dans '{cleanedSourceDir}' : {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Erreur inattendue dans '{cleanedSourceDir}' : {ex.Message}", ex);
             }
         }
 
