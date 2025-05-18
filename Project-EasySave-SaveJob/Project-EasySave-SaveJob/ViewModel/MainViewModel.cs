@@ -131,10 +131,7 @@ namespace Projet.ViewModel
 
                 var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
                 if (statusEntries == null || statusEntries.Count == 0)
-                    return;
-
-              
-               
+                    return;               
 
                 var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var recentJobs = new List<BackupJob>();
