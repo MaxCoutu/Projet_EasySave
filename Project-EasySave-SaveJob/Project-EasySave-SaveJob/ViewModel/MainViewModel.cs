@@ -27,10 +27,13 @@ namespace Projet.ViewModel
         public ICommand RunSelectedCmd { get; }
         public ICommand RunAllCmd { get; }
         public ICommand ShowAddJobViewCommand { get; }
+        public ICommand ShowChooseJobViewCommand { get; }
         public ICommand ShowRemoveJobViewCommand { get; }
         public ICommand RunJobCmd { get; }
         public ICommand SetFrenchCommand { get; }
         public ICommand SetEnglishCommand { get; }
+        public ICommand OpenSettingsCommand { get; }
+        public ICommand ReturnToMainViewCommand { get; }
 
         private ViewModelBase _currentViewModel;
         public ViewModelBase CurrentViewModel
@@ -58,6 +61,7 @@ namespace Projet.ViewModel
             RunSelectedCmd = new RelayCommand(_ => _svc.ExecuteBackupAsync(_selected?.Name));
             RunAllCmd = new RelayCommand(_ => _svc.ExecuteAllBackupsAsync());
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
+            ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => RemoveJobRequested?.Invoke());
 
             RunJobCmd = new RelayCommand(param =>
@@ -70,6 +74,10 @@ namespace Projet.ViewModel
                 _lang.Load(Path.Combine(_langDir, "fr.json")));
             SetEnglishCommand = new RelayCommand(_ =>
                 _lang.Load(Path.Combine(_langDir, "en.json")));
+
+            OpenSettingsCommand = new RelayCommand(_ => { /* Logique pour ouvrir les paramètres */ });
+
+            ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
 
             _svc.StatusUpdated += s => { /* UI progress if needed */ };
 
@@ -85,13 +93,12 @@ namespace Projet.ViewModel
 
         private void ShowAddJobView()
         {
-            var vm = new AddJobViewModel(_svc);
-            vm.JobAdded += () =>
-            {
-                RefreshJobs();
-                CurrentViewModel = this;
-            };
-            CurrentViewModel = vm;
+            CurrentViewModel = new AddJobViewModel(_svc);
+        }
+
+        private void ShowChooseJobView()
+        {
+            CurrentViewModel = new ChooseJobViewModel(_svc);
         }
 
         private void ShowRemoveJobView()

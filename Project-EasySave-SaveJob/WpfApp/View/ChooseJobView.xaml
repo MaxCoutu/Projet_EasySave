@@ -1,0 +1,93 @@
+﻿<UserControl x:Class="Projet.Wpf.View.ChooseJobView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:Projet.Wpf.Localization"
+             xmlns:local="clr-namespace:Projet.Wpf.View">
+    <UserControl.Resources>
+        <local:FolderNameConverter x:Key="FolderNameConverter"/>
+    </UserControl.Resources>
+    <Border CornerRadius="15"
+            Padding="20"
+            BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title (fixe) -->
+            <TextBlock Grid.Row="0"
+                       Text="{loc:Loc recent_title}"
+                       FontSize="40"
+                       FontWeight="Bold"
+                       Foreground="#CCFFFFFF"
+                       Opacity="0.8"
+                       Margin="0,0,0,20"
+                       HorizontalAlignment="Center"/>
+
+            <!-- Contenu défilable -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Hidden">
+                <ItemsControl ItemsSource="{Binding Jobs}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border CornerRadius="12"
+                                    Background="#FF33345A"
+                                    Margin="0,0,0,10"
+                                    Padding="15">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="18"
+                                                       FontWeight="Bold"
+                                                       Foreground="White"/>
+                                            <TextBlock Text="{Binding Strategy.Type}"
+                                                       FontSize="18"
+                                                       FontStyle="Italic"
+                                                       Foreground="#CCCCCC"
+                                                       Margin="8,0,0,0"/>
+                                        </StackPanel>
+
+                                        <TextBlock FontSize="12"
+                                                   Opacity="0.7"
+                                                   TextWrapping="Wrap">
+                                            <Run Text="{loc:Loc src_label}"/>
+                                            <Run Text=" "/>
+                                            <Run Text="{Binding SourceDir, Converter={StaticResource FolderNameConverter}}"/>
+                                        </TextBlock>
+
+                                        <TextBlock FontSize="12"
+                                                   Opacity="0.7"
+                                                   TextWrapping="Wrap">
+                                            <Run Text="{loc:Loc dst_label}"/>
+                                            <Run Text=" "/>
+                                            <Run Text="{Binding TargetDir, Converter={StaticResource FolderNameConverter}}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <Button Grid.Column="1"
+                                            Width="25" Height="25"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip="{loc:Loc play_tooltip}">
+                                        <Path Data="M0,0 L0,20 L18,10 Z"
+                                              Fill="White"
+                                              Stretch="Uniform"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

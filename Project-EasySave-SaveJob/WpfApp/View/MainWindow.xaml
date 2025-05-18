@@ -28,10 +28,10 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
-                    CornerRadius="12">
+                                CornerRadius="12">
                             <ContentPresenter HorizontalAlignment="Left"
-                                VerticalAlignment="Center"
-                                Margin="{TemplateBinding Padding}"/>
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -50,92 +50,92 @@
                 <StackPanel Grid.Column="0" Margin="0,74,4,0">
                     <!-- Create -->
                     <Button Style="{StaticResource RoundedButton}"
-                  Background="#FF7428D7"
-                  Command="{Binding ShowAddJobViewCommand}">
+                            Background="#FF7428D7"
+                            Command="{Binding ShowAddJobViewCommand}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Loc menu_create}"
-                         Width="180" TextWrapping="Wrap"/>
+                                       Width="180" TextWrapping="Wrap"/>
                             <Image Source="C:\Users\jmail\Downloads\pen-field-svgrepo-com.png"
-                     Width="57" Height="57" Margin="10,0,0,0"/>
+                                   Width="57" Height="57" Margin="10,0,0,0"/>
                         </StackPanel>
                     </Button>
 
                     <!-- Choose -->
                     <Button Style="{StaticResource RoundedButton}"
-                  Background="#FF0E73C5"
-                  Command="{Binding ChooseJobCommand}">
+                            Background="#FF0E73C5"
+                            Command="{Binding ShowChooseJobViewCommand}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Loc menu_choose}"
-                         Width="180" TextWrapping="Wrap"/>
+                                       Width="180" TextWrapping="Wrap"/>
                             <Image Source="C:\Users\jmail\Downloads\target-arrow-svgrepo-com.png"
-                     Width="57" Height="57" Margin="10,0,0,0"/>
+                                   Width="57" Height="57" Margin="10,0,0,0"/>
                         </StackPanel>
                     </Button>
 
                     <!-- Run All -->
                     <Button Style="{StaticResource RoundedButton}"
-                  Background="#FFF5AC6E"
-                  Command="{Binding RunAllCmd}">
+                            Background="#FFF5AC6E"
+                            Command="{Binding RunAllCmd}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Loc menu_runall}"
-                         Width="180" TextWrapping="Wrap"/>
+                                       Width="180" TextWrapping="Wrap"/>
                             <Image Source="C:\Users\jmail\Downloads\multiple-svgrepo-com (1).png"
-                     Width="57" Height="57" Margin="10,0,0,0"/>
+                                   Width="57" Height="57" Margin="10,0,0,0"/>
                         </StackPanel>
                     </Button>
 
                     <!-- Spacer -->
                     <StackPanel Orientation="Horizontal"
-                      HorizontalAlignment="Left"
-                      Margin="0,20,0,0">
+                                HorizontalAlignment="Left"
+                                Margin="0,20,0,0">
                         <Button Background="Transparent" BorderThickness="0"
-                    Command="{Binding OpenSettingsCommand}"
-                    ToolTip="{loc:Loc menu_settings}">
+                                Command="{Binding OpenSettingsCommand}"
+                                ToolTip="{loc:Loc menu_settings}">
                             <Image Source="C:\Users\jmail\Downloads\settings-svgrepo-com.png"
-                     Width="44" Height="44"/>
+                                   Width="44" Height="44"/>
                         </Button>
                         <Button Background="Transparent" BorderThickness="0"
-                    Command="{Binding SetFrenchCommand}"
-                    Margin="60,0,0,0">
+                                Command="{Binding SetFrenchCommand}"
+                                Margin="60,0,0,0">
                             <Image Source="C:\Users\jmail\Downloads\flag-wf-svgrepo-com.png"
-                     Width="45" Height="43"/>
+                                   Width="45" Height="43"/>
                         </Button>
                         <Button Background="Transparent" BorderThickness="0"
-                    Command="{Binding SetEnglishCommand}"
-                    Margin="10,0,0,0">
+                                Command="{Binding SetEnglishCommand}"
+                                Margin="10,0,0,0">
                             <Image Source="C:\Users\jmail\Downloads\flag-gb-svgrepo-com.png"
-                     Width="45" Height="42"/>
+                                   Width="45" Height="42"/>
                         </Button>
                     </StackPanel>
                 </StackPanel>
 
                 <!-- MAIN PANEL -->
                 <Border Grid.Column="1"
-                Background="#FF25234E"
-                CornerRadius="15"
-                Padding="20"
-                BorderBrush="#FF3B3A5E"
-                BorderThickness="1"
-                Margin="30,10,0,10">
+                        Background="#FF25234E"
+                        CornerRadius="15"
+                        Padding="20"
+                        BorderBrush="#FF3B3A5E"
+                        BorderThickness="1"
+                        Margin="30,10,0,10">
                     <ScrollViewer VerticalScrollBarVisibility="Disabled">
                         <StackPanel>
                             <!-- Title -->
                             <TextBlock Text="{loc:Loc recent_title}"
-                         FontSize="40"
-                         FontWeight="Bold"
-                         Foreground="#CCFFFFFF"
-                         Opacity="0.8"
-                         Margin="0,0,0,20"
-                         HorizontalAlignment="Center"/>
+                                       FontSize="40"
+                                       FontWeight="Bold"
+                                       Foreground="#CCFFFFFF"
+                                       Opacity="0.8"
+                                       Margin="0,0,0,20"
+                                       HorizontalAlignment="Center"/>
 
                             <!-- Items list -->
                             <ItemsControl ItemsSource="{Binding Jobs}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border CornerRadius="12"
-                            Background="#FF33345A"
-                            Margin="0,0,0,10"
-                            Padding="15">
+                                                Background="#FF33345A"
+                                                Margin="0,0,0,10"
+                                                Padding="15">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition/>
@@ -145,43 +145,43 @@
                                                 <StackPanel>
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding Name}"
-                                       FontSize="18"
-                                       FontWeight="Bold"
-                                       Foreground="White"/>
+                                                                   FontSize="18"
+                                                                   FontWeight="Bold"
+                                                                   Foreground="White"/>
                                                         <TextBlock Text="{Binding Strategy.Type}"
-                                       FontSize="18"
-                                       FontStyle="Italic"
-                                       Foreground="#CCCCCC"
-                                       Margin="8,0,0,0"/>
+                                                                   FontSize="18"
+                                                                   FontStyle="Italic"
+                                                                   Foreground="#CCCCCC"
+                                                                   Margin="8,0,0,0"/>
                                                     </StackPanel>
 
                                                     <TextBlock FontSize="12"
-                                     Opacity="0.7"
-                                     TextWrapping="Wrap">
-                            <Run Text="{loc:Loc src_label}"/>
-                            <Run Text=" "/>
-                            <Run Text="{Binding SourceDir, Converter={StaticResource FolderNameConverter}}"/>
+                                                               Opacity="0.7"
+                                                               TextWrapping="Wrap">
+                                                        <Run Text="{loc:Loc src_label}"/>
+                                                        <Run Text=" "/>
+                                                        <Run Text="{Binding SourceDir, Converter={StaticResource FolderNameConverter}}"/>
                                                     </TextBlock>
 
                                                     <TextBlock FontSize="12"
-                                     Opacity="0.7"
-                                     TextWrapping="Wrap">
-                            <Run Text="{loc:Loc dst_label}"/>
-                            <Run Text=" "/>
-                            <Run Text="{Binding TargetDir, Converter={StaticResource FolderNameConverter}}"/>
+                                                               Opacity="0.7"
+                                                               TextWrapping="Wrap">
+                                                        <Run Text="{loc:Loc dst_label}"/>
+                                                        <Run Text=" "/>
+                                                        <Run Text="{Binding TargetDir, Converter={StaticResource FolderNameConverter}}"/>
                                                     </TextBlock>
                                                 </StackPanel>
 
                                                 <Button Grid.Column="1"
-                                Width="40" Height="40"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="{Binding}"
-                                ToolTip="{loc:Loc play_tooltip}">
+                                                        Width="25" Height="25"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip="{loc:Loc play_tooltip}">
                                                     <Path Data="M0,0 L0,20 L18,10 Z"
-                                Fill="White"
-                                Stretch="Uniform"/>
+                                                          Fill="White"
+                                                          Stretch="Uniform"/>
                                                 </Button>
                                             </Grid>
                                         </Border>
@@ -193,12 +193,29 @@
                 </Border>
             </Grid>
         </DataTemplate>
+
+        <!-- Style pour le bouton Retour -->
+        <Style x:Key="BackButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    
     <Grid>
+        <!-- Contenu principal -->
         <ContentControl x:Name="MainContentControl"
-                    Content="{Binding CurrentViewModel}">
+                        Content="{Binding CurrentViewModel}">
             <ContentControl.Style>
                 <Style TargetType="ContentControl">
                     <Setter Property="ContentTemplate" Value="{StaticResource MainViewTemplate}"/>
@@ -207,15 +224,32 @@
                             <Setter Property="ContentTemplate">
                                 <Setter.Value>
                                     <DataTemplate>
-                                       
                                         <Border Background="#FF25234E"
-                            Width="700" Height="400"
-                            CornerRadius="15"
-                            Padding="20"
-                            BorderBrush="#FF3B3A5E"
-                            BorderThickness="1"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
+                                                Width="700" Height="400"
+                                                CornerRadius="15"
+                                                Padding="20"
+                                                BorderBrush="#FF3B3A5E"
+                                                BorderThickness="1"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                            <ContentPresenter Content="{Binding}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="ChooseJobViewModel">
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <Border Background="#FF25234E"
+                                                Width="700" Height="400"
+                                                CornerRadius="15"
+                                                Padding="20"
+                                                BorderBrush="#FF3B3A5E"
+                                                BorderThickness="1"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
                                             <ContentPresenter Content="{Binding}"/>
                                         </Border>
                                     </DataTemplate>
@@ -226,5 +260,31 @@
                 </Style>
             </ContentControl.Style>
         </ContentControl>
+
+        <!-- Bouton Retour -->
+        <Button Command="{Binding ReturnToMainViewCommand}" 
+                Height="35" Width="50" 
+                Background="#FF555555" Foreground="White" 
+                BorderThickness="0"
+              
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom"
+                Margin="20,0,0,20">
+            <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource BackButtonStyle}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="AddJobViewModel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="ChooseJobViewModel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+            <Image Source="/Resources/back-icon.png" Width="20" Height="20"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Button>
     </Grid>
 </Window>

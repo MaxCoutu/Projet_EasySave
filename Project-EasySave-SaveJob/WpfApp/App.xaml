@@ -8,6 +8,9 @@
         <DataTemplate DataType="{x:Type vm:AddJobViewModel}">
             <view:AddJobView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ChooseJobViewModel}">
+            <view:ChooseJobView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:RemoveJobViewModel}">
             <view:RemoveJobView />
         </DataTemplate>
