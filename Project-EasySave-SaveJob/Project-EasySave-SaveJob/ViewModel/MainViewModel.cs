@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
+using System.Timers;
 using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
@@ -17,6 +18,7 @@ namespace Projet.ViewModel
         private readonly ILanguageService _lang;
         private readonly string _langDir;
         private readonly IPathProvider _paths;
+        private Timer _progressTimer;
 
         public ObservableCollection<BackupJob> Jobs { get; }
         private ObservableCollection<BackupJob> _recentJobs;
@@ -31,6 +33,20 @@ namespace Projet.ViewModel
         {
             get => _selected;
             set { _selected = value; OnPropertyChanged(); }
+        }
+
+        private double _progression;
+        public double Progression
+        {
+            get => _progression;
+            set { _progression = value; OnPropertyChanged(); }
+        }
+
+        private string _currentJobName;
+        public string CurrentJobName
+        {
+            get => _currentJobName;
+            set { _currentJobName = value; OnPropertyChanged(); }
         }
 
         public ICommand AddJobCmd { get; }
@@ -76,12 +92,19 @@ namespace Projet.ViewModel
             {
                 if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
                 {
+                    CurrentJobName = _selected.Name;
+                    StartProgressMonitoring(_selected.Name);
                     await _svc.ExecuteBackupAsync(_selected.Name);
+                    StopProgressMonitoring();
+                    CurrentJobName = null;
                 }
             });
             RunAllCmd = new RelayCommand(async _ =>
             {
+                CurrentJobName = null; // Pas de job unique
+                StartProgressMonitoring();
                 await _svc.ExecuteAllBackupsAsync();
+                StopProgressMonitoring();
             });
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
@@ -91,7 +114,11 @@ namespace Projet.ViewModel
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
                 {
+                    CurrentJobName = job.Name;
+                    StartProgressMonitoring(job.Name);
                     await _svc.ExecuteBackupAsync(job.Name);
+                    StopProgressMonitoring();
+                    CurrentJobName = null;
                 }
             });
 
@@ -131,12 +158,11 @@ namespace Projet.ViewModel
 
                 var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
                 if (statusEntries == null || statusEntries.Count == 0)
-                    return;               
+                    return;
 
                 var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var recentJobs = new List<BackupJob>();
 
-                
                 foreach (var entry in statusEntries)
                 {
                     if (!addedJobs.Contains(entry.Name))
@@ -152,7 +178,6 @@ namespace Projet.ViewModel
                     }
                 }
 
-                
                 recentJobs.Reverse();
                 foreach (var job in recentJobs)
                 {
@@ -180,6 +205,59 @@ namespace Projet.ViewModel
         private void ShowChooseJobView()
         {
             CurrentViewModel = new ChooseJobViewModel(_svc);
+        }
+
+        // --- Barre de progression ---
+
+        private void StartProgressMonitoring(string jobName = null)
+        {
+            StopProgressMonitoring();
+            _progressTimer = new Timer(500);
+            _progressTimer.Elapsed += (s, e) => UpdateProgressionFromStatus(jobName);
+            _progressTimer.Start();
+        }
+
+        private void StopProgressMonitoring()
+        {
+            if (_progressTimer != null)
+            {
+                _progressTimer.Stop();
+                _progressTimer.Dispose();
+                _progressTimer = null;
+            }
+            Progression = 0;
+        }
+
+        private void UpdateProgressionFromStatus(string jobName = null)
+        {
+            string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
+            if (!File.Exists(statusPath))
+                return;
+
+            try
+            {
+                string json = File.ReadAllText(statusPath);
+                var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
+                StatusEntry entry = null;
+
+                if (!string.IsNullOrWhiteSpace(jobName))
+                {
+                    entry = statusEntries?.FirstOrDefault(e => e.Name == jobName);
+                }
+                else
+                {
+                    entry = statusEntries?.FirstOrDefault();
+                }
+
+                if (entry != null)
+                {
+                    Progression = entry.Progression;
+                }
+            }
+            catch
+            {
+                // Ignore errors
+            }
         }
     }
 }
