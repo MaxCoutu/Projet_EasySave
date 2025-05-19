@@ -5,12 +5,13 @@ using System.Text;
 
 namespace Projet.Infrastructure
 {
-    public class DefaultPathProvider: IPathProvider
+    public class DefaultPathProvider : IPathProvider
     {
-        private const string Base =
-            @"C:\Projet";
+        private static readonly string Base =
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
 
-        public string GetBaseDir()  => Base;
+        public string GetBaseDir() => Base;
+
         public string GetLogDir()
         {
             string dir = Path.Combine(Base, "Logs");
@@ -25,4 +26,5 @@ namespace Projet.Infrastructure
             return dir;
         }
     }
+
 }
