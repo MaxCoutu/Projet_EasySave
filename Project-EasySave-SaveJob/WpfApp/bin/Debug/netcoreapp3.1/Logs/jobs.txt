@@ -1,0 +1,3 @@
+Gros test|C:\Users\Maxendre\CESI\AIProject|C:\Users\Maxendre\CESI\FISE A3\test|full
+vrai test|C:\Users\Maxendre\curseforge|C:\Users\Maxendre\CESI\FISE A3\test|full
+film|D:\film\test|C:\Users\Maxendre\CESI\FISE A3\test|full

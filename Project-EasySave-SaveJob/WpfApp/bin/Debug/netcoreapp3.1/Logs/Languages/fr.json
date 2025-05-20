@@ -1,0 +1,19 @@
+{
+  "menu_title":         "Easy Save",
+  "menu_create":        "Créer une\nsauvegarde",
+  "menu_choose":        "Choisir une\nsauvegarde à lancer",
+  "menu_runall":        "Lancer toutes\nles sauvegardes",
+  "menu_settings":      "Paramètres",
+  "menu_choice":        "Choix :",
+  "recent_title":       "Sauvegardes récentes lancées",
+  "col_name":           "Nom",
+  "col_type":           "Type",
+  "src_label":          "Dossier source :",
+  "dst_label":          "Dossier cible :",
+  "play_tooltip":       "Lancer ce job",
+  "create_backup_job":  "Créer une tâche de sauvegarde",
+  "backup_name":        "Nom de la tâche",
+  "source_directory":   "Dossier source",
+  "target_directory":   "Dossier cible",
+  "type":               "Type"
+}

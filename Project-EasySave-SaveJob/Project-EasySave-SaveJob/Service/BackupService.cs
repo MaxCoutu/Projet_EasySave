@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Projet.Infrastructure;
 using Projet.Model;
 
 namespace Projet.Service
 {
-    public class BackupService : IBackupService, IDisposable
+    public class BackupService : IBackupService
     {
         public event Action<StatusEntry> StatusUpdated;
 
@@ -19,20 +17,12 @@ namespace Projet.Service
         private readonly Settings _settings;
         private readonly List<BackupJob> _jobs;
 
-        // File thread-safe pour les status
-        private readonly BlockingCollection<StatusEntry> _statusQueue = new();
-        private readonly CancellationTokenSource _cts = new();
-        private readonly Task _statusReporterTask;
-
         public BackupService(ILogger logger, IJobRepository repo, Settings settings)
         {
             _logger = logger;
             _repo = repo;
             _settings = settings;
             _jobs = new List<BackupJob>(_repo.Load());
-
-            // Lancer le thread de reporting
-            _statusReporterTask = Task.Run(() => StatusReporterLoop(_cts.Token));
         }
 
         public void AddJob(BackupJob job)
@@ -51,20 +41,11 @@ namespace Projet.Service
 
         public async Task ExecuteBackupAsync(string name)
         {
-            if (PackageBlocker.IsBlocked(_settings))
-            {
-                Console.WriteLine("Blocked package running — job skipped.");
-                return;
-            }
-
             var job = _jobs.FirstOrDefault(j => j.Name == name);
             if (job == null)
-            {
-                Console.WriteLine($"Job '{name}' not found.");
                 return;
-            }
 
-            EnqueueStatus(new StatusEntry { Name = job.Name, State = "PENDING" });
+            Report(new StatusEntry { Name = job.Name, State = "PENDING" });
 
             try
             {
@@ -72,17 +53,16 @@ namespace Projet.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erreur lors de l'exécution du backup '{job.Name}' : {ex.Message}");
+                Console.WriteLine($"Error executing backup '{name}': {ex.Message}");
             }
 
-            EnqueueStatus(new StatusEntry { Name = job.Name, State = "END" });
+            Report(new StatusEntry { Name = job.Name, State = "END" });
         }
 
         public async Task ExecuteAllBackupsAsync()
         {
             foreach (var job in _jobs)
             {
-                if (PackageBlocker.IsBlocked(_settings)) break;
                 await ExecuteBackupAsync(job.Name);
             }
         }
@@ -98,93 +78,52 @@ namespace Projet.Service
             if (!Directory.Exists(cleanedTargetDir))
                 Directory.CreateDirectory(cleanedTargetDir);
 
-            try
-            {
-                var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
-                long totalSize = files.Sum(f => new FileInfo(f).Length);
-                long bytesCopied = 0;
-                int total = files.Count, left = total;
+            var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
+            long totalSize = files.Sum(f => new FileInfo(f).Length);
+            long bytesCopied = 0;
+            int total = files.Count, left = total;
 
-                foreach (string src in files)
+            foreach (string src in files)
+            {
+                string rel = Path.GetRelativePath(cleanedSourceDir, src);
+                string dest = Path.Combine(cleanedTargetDir, rel);
+                Directory.CreateDirectory(Path.GetDirectoryName(dest));
+
+                var swCopy = System.Diagnostics.Stopwatch.StartNew();
+                long fileSize = new FileInfo(src).Length;
+
+                await CopyFileWithProgressAsync(src, dest, (copied, isFinal) =>
                 {
-                    if (PackageBlocker.IsBlocked(_settings))
+                    long currentBytesCopied = bytesCopied + copied;
+                    double progression = totalSize > 0 ? (currentBytesCopied * 100.0) / totalSize : 100.0;
+                    if (isFinal || swCopy.ElapsedMilliseconds >= 500)
                     {
-                        Console.WriteLine("Backup interrompu : package bloqué.");
-                        Environment.Exit(1);
-                    }
-
-                    string rel = Path.GetRelativePath(cleanedSourceDir, src);
-                    string dest = Path.Combine(cleanedTargetDir, rel);
-                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
-
-                    var swCopy = System.Diagnostics.Stopwatch.StartNew();
-                    long fileSize = new FileInfo(src).Length;
-
-                    await CopyFileWithProgressAsync(src, dest, (copied, isFinal) =>
-                    {
-                        long currentBytesCopied = bytesCopied + copied;
-                        double progression = totalSize > 0 ? (currentBytesCopied * 100.0) / totalSize : 100.0;
-                        // On ne reporte que toutes les 500ms ou à la fin du fichier
-                        if (isFinal || swCopy.ElapsedMilliseconds >= 500)
+                        swCopy.Restart();
+                        Report(new StatusEntry
                         {
-                            swCopy.Restart();
-                            EnqueueStatus(new StatusEntry
-                            {
-                                Name = job.Name,
-                                SourceFilePath = src,
-                                TargetFilePath = dest,
-                                State = "ACTIVE",
-                                TotalFilesToCopy = total,
-                                TotalFilesSize = totalSize,
-                                NbFilesLeftToDo = left,
-                                Progression = progression
-                            });
-                        }
-                    });
-
-                    swCopy.Stop();
-
-                    int encMs = 0;
-                    if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
-                    {
-                        encMs = CryptoSoftHelper.Encrypt(dest, _settings);
+                            Name = job.Name,
+                            SourceFilePath = src,
+                            TargetFilePath = dest,
+                            State = "ACTIVE",
+                            TotalFilesToCopy = total,
+                            TotalFilesSize = totalSize,
+                            NbFilesLeftToDo = left,
+                            Progression = progression
+                        });
                     }
+                });
 
-                    _logger.LogEvent(new LogEntry
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        JobName = job.Name,
-                        SourcePath = src,
-                        DestPath = dest,
-                        FileSize = fileSize,
-                        TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
-                        EncryptionTimeMs = encMs
-                    });
+                swCopy.Stop();
 
-                    bytesCopied += fileSize;
-                    left--;
-                }
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                throw new UnauthorizedAccessException($"Accès refusé au répertoire '{cleanedSourceDir}' : {ex.Message}", ex);
-            }
-            catch (IOException ex)
-            {
-                throw new IOException($"Erreur d'E/S dans '{cleanedSourceDir}' : {ex.Message}", ex);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Erreur inattendue dans '{cleanedSourceDir}' : {ex.Message}", ex);
+                bytesCopied += fileSize;
+                left--;
             }
         }
 
-        // Callback : (octets copiés, bool isFinal)
         private async Task CopyFileWithProgressAsync(string src, string dst, Action<long, bool> progress)
         {
             const int bufferSize = 81920;
             long copied = 0;
-            var lastReport = DateTime.UtcNow;
             using (var source = new FileStream(src, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, true))
             using (var dest = new FileStream(dst, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, true))
             {
@@ -194,51 +133,17 @@ namespace Projet.Service
                 {
                     await dest.WriteAsync(buffer, 0, read);
                     copied += read;
-                    var now = DateTime.UtcNow;
-                    if ((now - lastReport).TotalMilliseconds >= 500)
-                    {
-                        progress?.Invoke(copied, false);
-                        lastReport = now;
-                    }
+                    progress?.Invoke(copied, false);
                 }
-                // Report final à la fin du fichier
                 progress?.Invoke(copied, true);
             }
         }
 
-        // Ajoute un status à la file (thread-safe)
-        private void EnqueueStatus(StatusEntry s)
+        private void Report(StatusEntry s)
         {
-            _statusQueue.Add(s);
-        }
-
-        // Thread de reporting : consomme la file et écrit le status
-        private void StatusReporterLoop(CancellationToken token)
-        {
-            try
-            {
-                foreach (var status in _statusQueue.GetConsumingEnumerable(token))
-                {
-                    _logger.UpdateStatus(status);
-                    StatusUpdated?.Invoke(status);
-                    // Optionnel : Thread.Sleep(50); // pour lisser la charge disque
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Arrêt normal
-            }
-        }
-
-        // Pour bien libérer le thread à la fermeture
-        public void Dispose()
-        {
-            _cts.Cancel();
-            _statusQueue.CompleteAdding();
-            try { _statusReporterTask.Wait(); } catch { }
-            _cts.Dispose();
-            _statusQueue.Dispose();
+            Console.WriteLine($"Reporting: Job={s.Name}, State={s.State}, Progression={s.Progression:F2}%");
+            _logger.UpdateStatus(s);
+            StatusUpdated?.Invoke(s);
         }
     }
 }
-

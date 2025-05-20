@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
-using System.Timers;
 using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
@@ -18,7 +17,6 @@ namespace Projet.ViewModel
         private readonly ILanguageService _lang;
         private readonly string _langDir;
         private readonly IPathProvider _paths;
-        private Timer _progressTimer;
 
         public ObservableCollection<BackupJob> Jobs { get; }
         private ObservableCollection<BackupJob> _recentJobs;
@@ -35,18 +33,18 @@ namespace Projet.ViewModel
             set { _selected = value; OnPropertyChanged(); }
         }
 
-        private double _progression;
-        public double Progression
+        private Dictionary<string, double> _jobProgress;
+        public Dictionary<string, double> JobProgress
         {
-            get => _progression;
-            set { _progression = value; OnPropertyChanged(); }
+            get => _jobProgress;
+            set { _jobProgress = value; OnPropertyChanged(); }
         }
 
-        private string _currentJobName;
-        public string CurrentJobName
+        private HashSet<string> _runningJobs;
+        public HashSet<string> RunningJobs
         {
-            get => _currentJobName;
-            set { _currentJobName = value; OnPropertyChanged(); }
+            get => _runningJobs;
+            private set { _runningJobs = value; OnPropertyChanged(); }
         }
 
         public ICommand AddJobCmd { get; }
@@ -86,25 +84,36 @@ namespace Projet.ViewModel
             RecentJobs = new ObservableCollection<BackupJob>();
             LoadRecentJobs();
 
+            _jobProgress = new Dictionary<string, double>();
+            _runningJobs = new HashSet<string>();
+
             AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
             RunSelectedCmd = new RelayCommand(async _ =>
             {
                 if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
                 {
-                    CurrentJobName = _selected.Name;
-                    StartProgressMonitoring(_selected.Name);
+                    _runningJobs.Add(_selected.Name);
+                    OnPropertyChanged(nameof(RunningJobs));
                     await _svc.ExecuteBackupAsync(_selected.Name);
-                    StopProgressMonitoring();
-                    CurrentJobName = null;
+                    _runningJobs.Remove(_selected.Name);
+                    _jobProgress.Remove(_selected.Name);
+                    OnPropertyChanged(nameof(RunningJobs));
+                    OnPropertyChanged(nameof(JobProgress));
                 }
             });
             RunAllCmd = new RelayCommand(async _ =>
             {
-                CurrentJobName = null; // Pas de job unique
-                StartProgressMonitoring();
+                foreach (var job in Jobs)
+                {
+                    _runningJobs.Add(job.Name);
+                }
+                OnPropertyChanged(nameof(RunningJobs));
                 await _svc.ExecuteAllBackupsAsync();
-                StopProgressMonitoring();
+                _runningJobs.Clear();
+                _jobProgress.Clear();
+                OnPropertyChanged(nameof(RunningJobs));
+                OnPropertyChanged(nameof(JobProgress));
             });
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
@@ -114,11 +123,13 @@ namespace Projet.ViewModel
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
                 {
-                    CurrentJobName = job.Name;
-                    StartProgressMonitoring(job.Name);
+                    _runningJobs.Add(job.Name);
+                    OnPropertyChanged(nameof(RunningJobs));
                     await _svc.ExecuteBackupAsync(job.Name);
-                    StopProgressMonitoring();
-                    CurrentJobName = null;
+                    _runningJobs.Remove(job.Name);
+                    _jobProgress.Remove(job.Name);
+                    OnPropertyChanged(nameof(RunningJobs));
+                    OnPropertyChanged(nameof(JobProgress));
                 }
             });
 
@@ -127,11 +138,28 @@ namespace Projet.ViewModel
             SetEnglishCommand = new RelayCommand(_ =>
                 _lang.Load(Path.Combine(_langDir, "en.json")));
 
-            OpenSettingsCommand = new RelayCommand(_ => { /* Logique pour ouvrir les paramètres */ });
+            OpenSettingsCommand = new RelayCommand(_ => { });
 
             ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
 
-            _svc.StatusUpdated += s => { RefreshJobs(); LoadRecentJobs(); };
+            _svc.StatusUpdated += s =>
+            {
+                RefreshJobs();
+                LoadRecentJobs();
+                if (s.State == "ACTIVE" || s.State == "PENDING")
+                {
+                    if (s.Progression >= 0 && s.Progression <= 100)
+                    {
+                        _jobProgress[s.Name] = s.Progression;
+                        OnPropertyChanged(nameof(JobProgress));
+                    }
+                }
+                else if (s.State == "END")
+                {
+                    _jobProgress[s.Name] = 100;
+                    OnPropertyChanged(nameof(JobProgress));
+                }
+            };
 
             CurrentViewModel = this;
         }
@@ -205,59 +233,6 @@ namespace Projet.ViewModel
         private void ShowChooseJobView()
         {
             CurrentViewModel = new ChooseJobViewModel(_svc);
-        }
-
-        // --- Barre de progression ---
-
-        private void StartProgressMonitoring(string jobName = null)
-        {
-            StopProgressMonitoring();
-            _progressTimer = new Timer(500);
-            _progressTimer.Elapsed += (s, e) => UpdateProgressionFromStatus(jobName);
-            _progressTimer.Start();
-        }
-
-        private void StopProgressMonitoring()
-        {
-            if (_progressTimer != null)
-            {
-                _progressTimer.Stop();
-                _progressTimer.Dispose();
-                _progressTimer = null;
-            }
-            Progression = 0;
-        }
-
-        private void UpdateProgressionFromStatus(string jobName = null)
-        {
-            string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
-            if (!File.Exists(statusPath))
-                return;
-
-            try
-            {
-                string json = File.ReadAllText(statusPath);
-                var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
-                StatusEntry entry = null;
-
-                if (!string.IsNullOrWhiteSpace(jobName))
-                {
-                    entry = statusEntries?.FirstOrDefault(e => e.Name == jobName);
-                }
-                else
-                {
-                    entry = statusEntries?.FirstOrDefault();
-                }
-
-                if (entry != null)
-                {
-                    Progression = entry.Progression;
-                }
-            }
-            catch
-            {
-                // Ignore errors
-            }
         }
     }
 }

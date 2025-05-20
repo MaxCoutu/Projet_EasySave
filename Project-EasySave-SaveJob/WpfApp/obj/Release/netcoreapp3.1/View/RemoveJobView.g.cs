@@ -9,6 +9,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
+using Projet.Wpf.Localization;
+using Projet.Wpf.View;
 using System;
 using System.Diagnostics;
 using System.Windows;

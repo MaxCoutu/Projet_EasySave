@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "Gros test",
+    "SourceFilePath": "C:\\Users\\Maxendre\\CESI\\AIProject\\saved_models\\model_43.keras",
+    "TargetFilePath": "C:\\Users\\Maxendre\\CESI\\FISE A3\\test\\saved_models\\model_43.keras",
+    "State": "ACTIVE",
+    "TotalFilesToCopy": 0,
+    "TotalFilesSize": 649226227,
+    "NbFilesLeftToDo": 284,
+    "Progression": 0
+  },
+  {
+    "Name": "vrai test",
+    "SourceFilePath": "C:\\Users\\Maxendre\\curseforge\\minecraft\\Instances\\Cobblemon Star Academy\\mods\\evenmoreinstruments-fabric-1.20-1.20.1-6.1.3.1.jar",
+    "TargetFilePath": "C:\\Users\\Maxendre\\CESI\\FISE A3\\test\\minecraft\\Instances\\Cobblemon Star Academy\\mods\\evenmoreinstruments-fabric-1.20-1.20.1-6.1.3.1.jar",
+    "State": "ACTIVE",
+    "TotalFilesToCopy": 0,
+    "TotalFilesSize": 13146724975,
+    "NbFilesLeftToDo": 69769,
+    "Progression": 0
+  },
+  {
+    "Name": "film",
+    "SourceFilePath": "D:\\film\\test\\Mourir.Peut.Attendre.2021.VFF.1080p.BluRay.mHD.x264.AC3-ROMKENT-Wawacity.tools.mkv",
+    "TargetFilePath": "C:\\Users\\Maxendre\\CESI\\FISE A3\\test\\Mourir.Peut.Attendre.2021.VFF.1080p.BluRay.mHD.x264.AC3-ROMKENT-Wawacity.tools.mkv",
+    "State": "ACTIVE",
+    "TotalFilesToCopy": 1,
+    "TotalFilesSize": 6070004259,
+    "NbFilesLeftToDo": 1,
+    "Progression": 6.788423572999012
+  }
+]

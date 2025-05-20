@@ -1,0 +1,19 @@
+{
+  "menu_title":         "Easy Save",
+  "menu_create":        "Create a\nBackup job",
+  "menu_choose":        "Choose a\nBackup job to run",
+  "menu_runall":        "Run all\nBackup jobs",
+  "menu_settings":      "Settings",
+  "menu_choice":        "Choice:",
+  "recent_title":       "Recent Backup jobs Launched",
+  "col_name":           "Backup Name",
+  "col_type":           "Type",
+  "src_label":          "Source directory:",
+  "dst_label":          "Target directory:",
+  "play_tooltip":       "Run this job",
+  "create_backup_job":  "Create a Backup job",
+  "backup_name":        "Backup Name",
+  "source_directory":   "Source Directory",
+  "target_directory":   "Target Directory",
+  "type":               "Type"
+}
