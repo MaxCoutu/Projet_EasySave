@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
+using System.Timers;
+using System.Windows;
 using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
@@ -17,6 +19,8 @@ namespace Projet.ViewModel
         private readonly ILanguageService _lang;
         private readonly string _langDir;
         private readonly IPathProvider _paths;
+        private readonly JobStatusViewModel _statusVM;
+        private readonly Timer _refreshTimer;
 
         public ObservableCollection<BackupJob> Jobs { get; }
         private ObservableCollection<BackupJob> _recentJobs;
@@ -69,6 +73,14 @@ namespace Projet.ViewModel
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
             RecentJobs = new ObservableCollection<BackupJob>();
             LoadRecentJobs();
+            
+            // Créer et configurer le JobStatusViewModel
+            _statusVM = new JobStatusViewModel(paths);
+            
+            // Timer pour mettre à jour régulièrement l'état des tâches
+            _refreshTimer = new Timer(1000); // 1 seconde
+            _refreshTimer.Elapsed += (s, e) => UpdateJobsStatus();
+            _refreshTimer.Start();
 
             AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
             RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
@@ -91,7 +103,15 @@ namespace Projet.ViewModel
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
                 {
+                    // Mettre immédiatement à jour l'état pour une meilleure réactivité de l'UI
+                    job.State = "PENDING";
+                    job.Progression = 0.01; // Démarre la progression à 1% pour montrer visuellement que le job a démarré
+                    
+                    // Exécuter la sauvegarde
                     await _svc.ExecuteBackupAsync(job.Name);
+                    
+                    // Forcer le rafraîchissement des tâches après l'exécution
+                    UpdateJobsStatus();
                 }
             });
 
@@ -183,6 +203,39 @@ namespace Projet.ViewModel
         private void ShowChooseJobView()
         {
             CurrentViewModel = new ChooseJobViewModel(_svc);
+        }
+
+        private void UpdateJobsStatus()
+        {
+            try
+            {
+                // Simple mise à jour directe sans passer par le dispatcher
+                UpdateJobStatusInternal();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur lors de la mise à jour du statut: {ex.Message}");
+            }
+        }
+
+        private void UpdateJobStatusInternal()
+        {
+            foreach (var job in Jobs)
+            {
+                _statusVM.ApplyStatus(job);
+            }
+            
+            foreach (var job in RecentJobs)
+            {
+                _statusVM.ApplyStatus(job);
+            }
+        }
+
+        public void Dispose()
+        {
+            _refreshTimer?.Stop();
+            _refreshTimer?.Dispose();
+            _statusVM?.Dispose();
         }
     }
 }

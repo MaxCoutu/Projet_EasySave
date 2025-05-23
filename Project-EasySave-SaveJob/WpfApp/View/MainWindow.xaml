@@ -11,6 +11,29 @@
 
     <Window.Resources>
         <local:FolderNameConverter x:Key="FolderNameConverter"/>
+        <local:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
+
+        <!-- Style for settings icon paths -->
+        <Style x:Key="SettingsPathStyle" TargetType="Path">
+            <Setter Property="Stroke" Value="White"/>
+            <Setter Property="StrokeThickness" Value="1.5"/>
+        </Style>
+
+        <!-- ProgressBar-->
+        <Style x:Key="RoundedProgressBar" TargetType="ProgressBar">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid MinHeight="15">
+                            <Border CornerRadius="7" Background="{TemplateBinding Background}"/>
+                            <Border x:Name="PART_Track" CornerRadius="7" Background="{TemplateBinding Background}"/>
+                            <Border x:Name="PART_Indicator" CornerRadius="7" Background="{TemplateBinding Foreground}" 
+                                    HorizontalAlignment="Left"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <!-- Style boutons arrondis -->
         <Style x:Key="RoundedButton" TargetType="Button">
@@ -68,36 +91,50 @@
                     <!-- Create -->
                     <Button Style="{StaticResource RoundedButton}"
                             Background="#FF7428D7"
+                            Cursor="Hand"
                             Command="{Binding ShowAddJobViewCommand}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Loc menu_create}"
                                        Width="180" TextWrapping="Wrap"/>
-                            <Image Source="C:\Users\jmail\Downloads\pen-field-svgrepo-com.png"
-                                   Width="57" Height="57" Margin="10,0,0,0"/>
+                                       <Viewbox Width="57" Height="57" Margin="10,0,0,0">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Data="M8 9.00006 H6.2 C5.0799 9.00006 4.51984 9.00006 4.09202 9.21805 C3.71569 9.40979 3.40973 9.71575 3.21799 10.0921 C3 10.5199 3 11.08 3 12.2001 V17.8001 C3 18.9202 3 19.4802 3.21799 19.908 C3.40973 20.2844 3.71569 20.5903 4.09202 20.7821 C4.51984 21.0001 5.07989 21.0001 6.2 21.0001 H17.787 C18.9071 21.0001 19.4671 21.0001 19.895 20.7821 C20.2713 20.5903 20.5772 20.2844 20.769 19.908 C20.987 19.4802 20.987 18.9202 20.987 17.8001 V12.0001 M6 15.0001 H6.01 M10 15 H10.01 M11.5189 12.8946 L12.8337 12.6347 C13.5432 12.4945 13.8979 12.4244 14.2287 12.2953 C14.5223 12.1807 14.8013 12.0318 15.06 11.8516 C15.3514 11.6487 15.607 11.393 16.1184 10.8816 L21.2668 5.73321 C21.9541 5.04596 21.9541 3.9317 21.2668 3.24444 C20.5796 2.55719 19.4653 2.55719 18.7781 3.24445 L13.5416 8.48088 C13.0625 8.96004 12.8229 9.19963 12.6294 9.47121 C12.4576 9.71232 12.3131 9.97174 12.1986 10.2447 C12.0696 10.5522 11.9921 10.8821 11.837 11.5417 L11.5189 12.8946 Z" Stroke="White" StrokeThickness="2" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        </Canvas>
+                                    </Viewbox>
                         </StackPanel>
                     </Button>
 
                     <!-- Choose -->
                     <Button Style="{StaticResource RoundedButton}"
                             Background="#FF0E73C5"
+                            Cursor="Hand"
                             Command="{Binding ShowChooseJobViewCommand}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Loc menu_choose}"
                                        Width="180" TextWrapping="Wrap"/>
-                            <Image Source="C:\Users\jmail\Downloads\target-arrow-svgrepo-com.png"
-                                   Width="57" Height="57" Margin="10,0,0,0"/>
+                                       <Viewbox Width="57" Height="57" Margin="10,0,0,0">
+                                        <Canvas Width="16" Height="16">
+                                            <Path Data="M8.16923 2.00234 C8.11301 2.00078 8.0566 2 8 2 C4.68629 2 2 4.68629 2 8 C2 11.3137 4.68629 14 8 14 C11.3137 14 14 11.3137 14 8 C14 7.9434 13.9992 7.88699 13.9977 7.83077 L15.7642 6.06422 C15.9182 6.68407 16 7.33249 16 8 C16 12.4183 12.4183 16 8 16 C3.58172 16 0 12.4183 0 8 C0 3.58172 3.58172 0 8 0 C8.66751 0 9.31593 0.0817526 9.93578 0.235791 L8.16923 2.00234 Z" Fill="White"/>
+                                            <Path Data="M4 7.99996 C4 6.13612 5.27477 4.57002 7 4.12598 V6.26752 C6.4022 6.61333 6 7.25968 6 7.99996 C6 9.10453 6.89543 9.99996 8 9.99996 C8.74028 9.99996 9.38663 9.59776 9.73244 8.99996 H11.874 C11.4299 10.7252 9.86384 12 8 12 C5.79086 12 4 10.2091 4 7.99996 Z" Fill="White"/>
+                                            <Path Data="M14 2 L13 0 L10 3 V4.58579 L7.79289 6.79289 L9.20711 8.20711 L11.4142 6 H13 L16 3 L14 2 Z" Fill="White"/>
+                                        </Canvas>
+                                    </Viewbox>
                         </StackPanel>
                     </Button>
 
                     <!-- Run All -->
                     <Button Style="{StaticResource RoundedButton}"
                             Background="#FFF5AC6E"
+                            Cursor="Hand"
                             Command="{Binding RunAllCmd}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="{loc:Loc menu_runall}"
                                        Width="180" TextWrapping="Wrap"/>
-                            <Image Source="C:\Users\jmail\Downloads\multiple-svgrepo-com (1).png"
-                                   Width="57" Height="57" Margin="10,0,0,0"/>
+                                       <Viewbox Width="57" Height="57" Margin="10,0,0,0">
+                                        <Canvas Width="24" Height="24">
+                                            <Path Data="M16,24 H0 V8 h4 V4 h4 V0 h16 v16 h-4 v4 h-4 V24 z M2,22 h12 V10 H2 V22 z M16,18 h2 V6 H6 v2 h10 V18 z M20,14 h2 V2 H10 v2 h10 V14 z" Fill="White"/>
+                                        </Canvas>
+                                    </Viewbox>
                         </StackPanel>
                     </Button>
 
@@ -106,22 +143,46 @@
                                 HorizontalAlignment="Left"
                                 Margin="0,20,0,0">
                         <Button Background="Transparent" BorderThickness="0"
+                                Cursor="Hand"
                                 Command="{Binding OpenSettingsCommand}"
                                 ToolTip="{loc:Loc menu_settings}">
-                            <Image Source="C:\Users\jmail\Downloads\settings-svgrepo-com.png"
-                                   Width="44" Height="44"/>
+                            <Viewbox Width="44" Height="44">
+                                <Path Stroke="White" 
+                                      StrokeThickness="1.5"
+                                      Fill="Transparent"
+                                      Data="M12,8 A4,4 0 1 1 12,16 A4,4 0 1 1 12,8 M3.66122 10.6392C4.13377 10.9361 4.43782 11.4419 4.43782 11.9999C4.43781 12.558 4.13376 13.0638 3.66122 13.3607C3.33966 13.5627 3.13248 13.7242 2.98508 13.9163C2.66217 14.3372 2.51966 14.869 2.5889 15.3949C2.64082 15.7893 2.87379 16.1928 3.33973 16.9999C3.80568 17.8069 4.03865 18.2104 4.35426 18.4526C4.77508 18.7755 5.30694 18.918 5.83284 18.8488C6.07287 18.8172 6.31628 18.7185 6.65196 18.5411C7.14544 18.2803 7.73558 18.2699 8.21895 18.549C8.70227 18.8281 8.98827 19.3443 9.00912 19.902C9.02332 20.2815 9.05958 20.5417 9.15224 20.7654C9.35523 21.2554 9.74458 21.6448 10.2346 21.8478C10.6022 22 11.0681 22 12 22C12.9319 22 13.3978 22 13.7654 21.8478C14.2554 21.6448 14.6448 21.2554 14.8478 20.7654C14.9404 20.5417 14.9767 20.2815 14.9909 19.9021C15.0117 19.3443 15.2977 18.8281 15.7811 18.549C16.2644 18.27 16.8545 18.2804 17.3479 18.5412C17.6837 18.7186 17.9271 18.8173 18.1671 18.8489C18.693 18.9182 19.2249 18.7756 19.6457 18.4527C19.9613 18.2106 20.1943 17.807 20.6603 17C20.8677 16.6407 21.029 16.3614 21.1486 16.1272M20.3387 13.3608C19.8662 13.0639 19.5622 12.5581 19.5621 12.0001C19.5621 11.442 19.8662 10.9361 20.3387 10.6392C20.6603 10.4372 20.8674 10.2757 21.0148 10.0836C21.3377 9.66278 21.4802 9.13092 21.411 8.60502C21.3591 8.2106 21.1261 7.80708 20.6601 7.00005C20.1942 6.19301 19.9612 5.7895 19.6456 5.54732C19.2248 5.22441 18.6929 5.0819 18.167 5.15113C17.927 5.18274 17.6836 5.2814 17.3479 5.45883C16.8544 5.71964 16.2643 5.73004 15.781 5.45096C15.2977 5.1719 15.0117 4.6557 14.9909 4.09803C14.9767 3.71852 14.9404 3.45835 14.8478 3.23463C14.6448 2.74458 14.2554 2.35523 13.7654 2.15224C13.3978 2 12.9319 2 12 2C11.0681 2 10.6022 2 10.2346 2.15224C9.74458 2.35523 9.35523 2.74458 9.15224 3.23463C9.05958 3.45833 9.02332 3.71848 9.00912 4.09794C8.98826 4.65566 8.70225 5.17191 8.21891 5.45096C7.73557 5.73002 7.14548 5.71959 6.65205 5.4588C6.31633 5.28136 6.0729 5.18269 5.83285 5.15108C5.30695 5.08185 4.77509 5.22436 4.35427 5.54727C4.03866 5.78945 3.80569 6.19297 3.33974 7C3.13231 7.35929 2.97105 7.63859 2.85138 7.87273"/>
+                            </Viewbox>
                         </Button>
                         <Button Background="Transparent" BorderThickness="0"
+                                Cursor="Hand"
                                 Command="{Binding SetFrenchCommand}"
                                 Margin="60,0,0,0">
-                            <Image Source="C:\Users\jmail\Downloads\flag-wf-svgrepo-com.png"
-                                   Width="45" Height="43"/>
+                                <Viewbox Width="45" Height="43">
+                                    <Canvas Width="36" Height="36">
+                                        <Path Data="M36 27a4 4 0 0 1-4 4h-8V5h8a4 4 0 0 1 4 4v18z" Fill="#ED2939"/>
+                                        <Path Data="M4 5a4 4 0 0 0-4 4v18a4 4 0 0 0 4 4h8V5H4z" Fill="#002495"/>
+                                        <Path Data="M12 5h12v26H12z" Fill="#EEE"/>
+                                    </Canvas>
+                                </Viewbox>
                         </Button>
                         <Button Background="Transparent" BorderThickness="0"
+                                Cursor="Hand"
                                 Command="{Binding SetEnglishCommand}"
                                 Margin="10,0,0,0">
-                            <Image Source="C:\Users\jmail\Downloads\flag-gb-svgrepo-com.png"
-                                   Width="45" Height="42"/>
+                                <Viewbox Width="45" Height="42">
+                                    <Canvas Width="28" Height="18" Margin="0,-2,0,0">
+                                        <Canvas.Clip>
+                                            <RectangleGeometry Rect="0,0,28,20" RadiusX="2" RadiusY="2"/>
+                                        </Canvas.Clip>
+                                        <Rectangle Width="28" Height="20" Fill="#0A17A7"/>
+                                        <Path Data="M-1.28244 -1.91644 L10.6667 6.14335 V-1.33333 H17.3334 V6.14335 L29.2825 -1.91644 L30.7737 0.294324 L21.3263 6.66667 H28 V13.3333 H21.3263 L30.7737 19.7057 L29.2825 21.9165 L17.3334 13.8567 V21.3333 H10.6667 V13.8567 L-1.28244 21.9165 L-2.77362 19.7057 L6.67377 13.3333 H2.95639e-05 V6.66667 H6.67377 L-2.77362 0.294324 L-1.28244 -1.91644 Z" Fill="White"/>
+                                        <Path Data="M18.668 6.33219 L31.3333 -2" Stroke="#DB1F35" StrokeThickness="0.666667" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Path Data="M20.0128 13.6975 L31.3666 21.3503" Stroke="#DB1F35" StrokeThickness="0.666667" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Path Data="M8.00555 6.31046 L-3.83746 -1.67099" Stroke="#DB1F35" StrokeThickness="0.666667" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Path Data="M9.29006 13.6049 L-3.83746 22.3105" Stroke="#DB1F35" StrokeThickness="0.666667" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        <Path Data="M0 12 H12 V20 H16 V12 H28 V8 H16 V0 H12 V8 H0 V12 Z" Fill="#E6273E"/>
+                                    </Canvas>
+                                </Viewbox>
                         </Button>
                     </StackPanel>
                 </StackPanel>
@@ -154,12 +215,16 @@
                                                 Margin="0,0,0,10"
                                                 Padding="15">
                                             <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <StackPanel>
+                                                <StackPanel Grid.Row="0">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding Name}"
                                                                    FontSize="18"
@@ -189,11 +254,42 @@
                                                         <Run Text="{Binding TargetDir, Converter={StaticResource FolderNameConverter}}"/>
                                                     </TextBlock>
                                                 </StackPanel>
+                                                
+                                                <!-- Barre de progression pour le job en cours -->
+                                                <Grid x:Name="ProgressPanel" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                                                      Visibility="{Binding Path=State, Converter={StaticResource ProgressToVisibilityConverter}}">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    
+                                                    <ProgressBar Grid.Row="0" Height="15" 
+                                                                 Minimum="0" Maximum="1" 
+                                                                 Value="{Binding Progression}"
+                                                                 Foreground="#FF7428D7" 
+                                                                 Background="#33FFFFFF"
+                                                                 BorderThickness="0"
+                                                                 Style="{StaticResource RoundedProgressBar}"/>
+                                                                 
+                                                    <TextBlock Grid.Row="1" Margin="0,5,0,0" FontSize="11" Foreground="#CCCCCC">
+                                                        <Run Text="{Binding Progression, StringFormat=\{0:P0\}}"/>
+                                                        <Run Text=" - "/>
+                                                        <Run Text="{Binding State}"/>
+                                                        <Run Text=" - fichiers copiés: "/>
+                                                        <Run FontWeight="Bold" Foreground="#AAFFAA" 
+                                                             Text="{Binding ., Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=calculate-copied}"/>
+                                                        <Run Text="/"/>
+                                                        <Run Text="{Binding TotalFilesToCopy}"/>
+                                                        <Run Text=" - "/>
+                                                        <Run Text="{Binding TotalFilesSize, StringFormat=\{0\} octets}"/>
+                                                    </TextBlock>
+                                                </Grid>
 
-                                                <Button Grid.Column="1"
+                                                <Button Grid.Column="1" Grid.Row="0"
                                                         Width="25" Height="25"
                                                         Background="Transparent"
                                                         BorderThickness="0"
+                                                        Cursor="Hand"
                                                         Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
                                                         ToolTip="{loc:Loc play_tooltip}">
@@ -264,6 +360,7 @@
 
         <!-- Bouton Retour -->
         <Button Command="{Binding ReturnToMainViewCommand}" 
+                Cursor="Hand"
                 Height="50" Width="50" 
                 Background="Transparent"
                 BorderThickness="0"
@@ -283,8 +380,12 @@
                     </Style.Triggers>
                 </Style>
             </Button.Style>
-            <Image Source="C:\Users\jmail\Downloads\chevron-left-circle-svgrepo-com.png" Width="50" Height="50"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Viewbox Width="50" Height="50" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Grid Width="32" Height="32">
+                    <Path Data="M16,30 C8.268,30 2,23.73 2,16 C2,8.27 8.268,2 16,2 C23.732,2 30,8.27 30,16 C30,23.73 23.732,30 16,30 Z M16,0 C7.163,0 0,7.16 0,16 C0,24.84 7.163,32 16,32 C24.837,32 32,24.84 32,16 C32,7.16 24.837,0 16,0 Z M20.535,7.46 C20.145,7.07 19.512,7.07 19.121,7.46 L11.465,15.12 C11.225,15.36 11.15,15.69 11.205,16 C11.15,16.31 11.225,16.64 11.465,16.88 L19.121,24.54 C19.512,24.93 20.145,24.93 20.535,24.54 C20.926,24.14 20.926,23.51 20.535,23.12 L13.414,16 L20.535,8.88 C20.926,8.49 20.926,7.86 20.535,7.46 Z" 
+                          Fill="White" />
+                </Grid>
+            </Viewbox>
         </Button>
     </Grid>
 </Window>
