@@ -5,19 +5,63 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Client"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <ListView ItemsSource="{Binding Jobs}">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" />
-                    <GridViewColumn Header="State" DisplayMemberBinding="{Binding State}" />
-                    <GridViewColumn Header="Progression" DisplayMemberBinding="{Binding Progression}" />
-                    <GridViewColumn Header="Total Files" DisplayMemberBinding="{Binding TotalFilesToCopy}" />
-                    <GridViewColumn Header="Files Left" DisplayMemberBinding="{Binding NbFilesLeftToDo}" />
-                </GridView>
-            </ListView.View>
-        </ListView>
+        Title="Jobs Overview" Height="500" Width="900" Background="#f5f7fa">
+    <Grid Margin="20">
+        <Border CornerRadius="10" Background="White" Padding="15"
+                BorderBrush="#ddd" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="2" Opacity="0.2"/>
+            </Border.Effect>
 
+            <ListView ItemsSource="{Binding Jobs}"
+                      AlternationCount="2"
+                      Margin="0"
+                      HorizontalContentAlignment="Stretch">
+
+                <ListView.Resources>
+                    <!-- Zébrage -->
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Style.Triggers>
+                            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                                <Setter Property="Background" Value="#f0f2f5"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#e3ebf6"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.Resources>
+
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="150"/>
+                        <GridViewColumn Header="State" DisplayMemberBinding="{Binding State}" Width="100"/>
+
+                        <!-- Barre de progression custom -->
+                        <GridViewColumn Header="Progression" Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="5">
+                                        <ProgressBar Value="{Binding Progression}" 
+                                                     Maximum="100" 
+                                                     Height="20" 
+                                                     Foreground="#4caf50"
+                                                     Background="#e0e0e0"
+                                                     BorderBrush="#ccc"
+                                                     BorderThickness="1"
+                                                     />
+                                    </Grid>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn Header="Total Files" DisplayMemberBinding="{Binding TotalFilesToCopy}" Width="100"/>
+                        <GridViewColumn Header="Files Left" DisplayMemberBinding="{Binding NbFilesLeftToDo}" Width="100"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </Border>
     </Grid>
 </Window>
