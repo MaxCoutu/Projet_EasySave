@@ -24,8 +24,10 @@ namespace Projet.Wpf.View
             InitializeComponent();
             _vm = new MainViewModel(App.BackupService, App.LanguageService, App.PathProvider);
             DataContext = _vm;
-            
-           
+            var socketServer = new BackupSocketServer(@"C:\Projet\Status\status.json", 5555);
+            socketServer.Start();
+
+
         }
     }
 }
