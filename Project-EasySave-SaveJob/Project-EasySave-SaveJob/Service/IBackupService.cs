@@ -18,5 +18,9 @@ namespace Projet.Service
         Task ExecuteAllBackupsAsync();
 
         IReadOnlyList<BackupJob> GetJobs();      
+        
+        // New methods for multithreading support
+        IReadOnlyCollection<string> GetRunningJobs();
+        bool IsJobRunning(string name);
     }
 }

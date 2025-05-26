@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using Projet.Infrastructure;
 
 namespace Projet.Model
@@ -32,20 +34,81 @@ namespace Projet.Model
 
             long totalSize = toCopy.Sum(f => new FileInfo(f).Length);
             int total = toCopy.Count;
-            int done = 0;
-
-            foreach (string src in toCopy)
+            
+            // Use a concurrent counter for thread-safe incrementing
+            int doneCount = 0;
+            object lockObj = new object();
+            
+            // Create a cancellation token source to allow cancellation
+            using var cts = new CancellationTokenSource();
+            
+            // Create a list to track all running tasks
+            var tasks = new List<Task>();
+            
+            // Create a semaphore to limit parallel operations
+            using var semaphore = new SemaphoreSlim(4); // Limit to 4 concurrent operations
+            
+            try
             {
-                string rel = Path.GetRelativePath(job.SourceDir, src);
-                string dest = Path.Combine(job.TargetDir, rel);
-
-                await CopyFileAsync(src, dest);
-                done++;
-
+                foreach (string src in toCopy)
+                {
+                    string rel = Path.GetRelativePath(job.SourceDir, src);
+                    string dest = Path.Combine(job.TargetDir, rel);
+                    
+                    // Wait for a semaphore slot
+                    await semaphore.WaitAsync(cts.Token);
+                    
+                    // Start a new task for this file
+                    var task = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await CopyFileAsync(src, dest, cts.Token);
+                            
+                            // Thread-safe increment of progress counter
+                            int newDoneCount;
+                            lock (lockObj)
+                            {
+                                doneCount++;
+                                newDoneCount = doneCount;
+                            }
+                            
+                            // Report progress
+                            progressCallback?.Invoke(new StatusEntry(
+                                job.Name, src, dest, "ACTIVE",
+                                total, totalSize, total - newDoneCount,
+                                newDoneCount / (double)total));
+                        }
+                        finally
+                        {
+                            // Always release the semaphore
+                            semaphore.Release();
+                        }
+                    }, cts.Token);
+                    
+                    tasks.Add(task);
+                }
+                
+                // Wait for all tasks to complete
+                await Task.WhenAll(tasks);
+            }
+            catch (OperationCanceledException)
+            {
+                // Handle cancellation
                 progressCallback?.Invoke(new StatusEntry(
-                    job.Name, src, dest, "ACTIVE",
-                    total, totalSize, total - done,
-                    done / (double)total));
+                    job.Name, "", "", "CANCELED",
+                    total, totalSize, total - doneCount,
+                    doneCount / (double)total));
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions
+                Console.WriteLine($"Error during backup: {ex.Message}");
+                progressCallback?.Invoke(new StatusEntry(
+                    job.Name, "", "", "ERROR",
+                    total, totalSize, total - doneCount,
+                    doneCount / (double)total));
+                throw;
             }
         }
     }

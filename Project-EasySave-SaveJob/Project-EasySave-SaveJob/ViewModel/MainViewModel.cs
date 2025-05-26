@@ -30,6 +30,14 @@ namespace Projet.ViewModel
             set { _recentJobs = value; OnPropertyChanged(); }
         }
 
+        // New collection for running jobs
+        private ObservableCollection<BackupJob> _runningJobs;
+        public ObservableCollection<BackupJob> RunningJobs
+        {
+            get => _runningJobs;
+            set { _runningJobs = value; OnPropertyChanged(); }
+        }
+
         private BackupJob _selected;
         public BackupJob SelectedJob
         {
@@ -72,6 +80,7 @@ namespace Projet.ViewModel
 
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
             RecentJobs = new ObservableCollection<BackupJob>();
+            RunningJobs = new ObservableCollection<BackupJob>();
             LoadRecentJobs();
             
             // Créer et configurer le JobStatusViewModel
@@ -89,19 +98,23 @@ namespace Projet.ViewModel
                 if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
                 {
                     await _svc.ExecuteBackupAsync(_selected.Name);
+                    // No need to wait for completion - update status on next refresh
                 }
-            });
+            }, _ => _selected != null && !string.IsNullOrWhiteSpace(_selected.Name) && !_svc.IsJobRunning(_selected.Name));
+            
             RunAllCmd = new RelayCommand(async _ =>
             {
                 await _svc.ExecuteAllBackupsAsync();
+                // No need to wait for completion - update status on next refresh
             });
+            
             ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
             ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
             ShowRemoveJobViewCommand = new RelayCommand(_ => RemoveJobRequested?.Invoke());
 
             RunJobCmd = new RelayCommand(async param =>
             {
-                if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
+                if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name) && !_svc.IsJobRunning(job.Name))
                 {
                     // Mettre immédiatement à jour l'état pour une meilleure réactivité de l'UI
                     job.State = "PENDING";
@@ -113,7 +126,7 @@ namespace Projet.ViewModel
                     // Forcer le rafraîchissement des tâches après l'exécution
                     UpdateJobsStatus();
                 }
-            });
+            }, param => param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name) && !_svc.IsJobRunning(job.Name));
 
             SetFrenchCommand = new RelayCommand(_ =>
                 _lang.Load(Path.Combine(_langDir, "fr.json")));
@@ -124,7 +137,7 @@ namespace Projet.ViewModel
 
             ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
 
-            _svc.StatusUpdated += s => { RefreshJobs(); LoadRecentJobs(); };
+            _svc.StatusUpdated += s => { RefreshJobs(); LoadRecentJobs(); UpdateRunningJobs(); };
 
             CurrentViewModel = this;
         }
@@ -153,13 +166,9 @@ namespace Projet.ViewModel
                 if (statusEntries == null || statusEntries.Count == 0)
                     return;
 
-              
-               
-
                 var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var recentJobs = new List<BackupJob>();
 
-                
                 foreach (var entry in statusEntries)
                 {
                     if (!addedJobs.Contains(entry.Name))
@@ -175,7 +184,6 @@ namespace Projet.ViewModel
                     }
                 }
 
-                
                 recentJobs.Reverse();
                 foreach (var job in recentJobs)
                 {
@@ -185,6 +193,39 @@ namespace Projet.ViewModel
             catch
             {
                 RecentJobs.Clear();
+            }
+        }
+
+        // New method to update running jobs display
+        private void UpdateRunningJobs()
+        {
+            try
+            {
+                // Get the list of currently running jobs from the service
+                var runningJobNames = _svc.GetRunningJobs();
+                
+                // Create a new temporary list to avoid collection modified exceptions
+                var newRunningJobs = new List<BackupJob>();
+                
+                foreach (var jobName in runningJobNames)
+                {
+                    var job = Jobs.FirstOrDefault(j => j.Name == jobName);
+                    if (job != null)
+                    {
+                        newRunningJobs.Add(job);
+                    }
+                }
+                
+                // Clear and update the collection
+                RunningJobs.Clear();
+                foreach (var job in newRunningJobs)
+                {
+                    RunningJobs.Add(job);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating running jobs: {ex.Message}");
             }
         }
 
@@ -209,6 +250,9 @@ namespace Projet.ViewModel
         {
             try
             {
+                // Update the list of running jobs
+                UpdateRunningJobs();
+                
                 // Simple mise à jour directe sans passer par le dispatcher
                 UpdateJobStatusInternal();
             }
@@ -226,6 +270,11 @@ namespace Projet.ViewModel
             }
             
             foreach (var job in RecentJobs)
+            {
+                _statusVM.ApplyStatus(job);
+            }
+            
+            foreach (var job in RunningJobs)
             {
                 _statusVM.ApplyStatus(job);
             }
