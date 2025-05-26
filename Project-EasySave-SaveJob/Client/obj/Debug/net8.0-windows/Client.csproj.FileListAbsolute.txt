@@ -56,3 +56,9 @@ C:\Users\HP\OneDrive\Bureau\Nicks\Project\Projet_EasySave\Project-EasySave-SaveJ
 C:\Users\HP\OneDrive\Bureau\Nicks\Project\Projet_EasySave\Project-EasySave-SaveJob\Client\obj\Debug\net8.0-windows\Client.pdb
 C:\Users\HP\OneDrive\Bureau\Nicks\Project\Projet_EasySave\Project-EasySave-SaveJob\Client\obj\Debug\net8.0-windows\Client.genruntimeconfig.cache
 C:\Users\HP\OneDrive\Bureau\Nicks\Project\Projet_EasySave\Project-EasySave-SaveJob\Client\obj\Debug\net8.0-windows\ref\Client.dll
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\Client\bin\Debug\net8.0-windows\WpfApp.deps.json
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\Client\bin\Debug\net8.0-windows\WpfApp.runtimeconfig.json
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\Client\bin\Debug\net8.0-windows\WpfApp.runtimeconfig.dev.json
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\Client\bin\Debug\net8.0-windows\WpfApp.exe
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\Client\bin\Debug\net8.0-windows\WpfApp.dll
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\Client\bin\Debug\net8.0-windows\WpfApp.pdb

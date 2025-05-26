@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Project-EasySave-SaveJob\Project-EasySave.csproj" />
+    <ProjectReference Include="..\WpfApp\WpfApp.csproj" />
   </ItemGroup>
 
 </Project>

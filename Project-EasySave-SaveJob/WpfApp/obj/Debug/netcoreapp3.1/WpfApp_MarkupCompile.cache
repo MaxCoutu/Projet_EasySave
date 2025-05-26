@@ -4,16 +4,16 @@
 winexe
 C#
 .cs
-C:\Users\HP\OneDrive\Bureau\Nicks\Project\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\
 WpfApp
 none
 false
-TRACE;DEBUG;NETCOREAPP;NETCOREAPP3_1;
-C:\Users\HP\OneDrive\Bureau\Nicks\Project\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\App.xaml
+TRACE;DEBUG;NETCOREAPP;NETCOREAPP3_1;;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER
+C:\Users\moham\Software_Engineering_Project_2025\Project-EasySave-SaveJob\WpfApp\App.xaml
 5237110293
 
 122103004605
-193295760625
+1931351077792
 Styles\ProgressBarStyles.xaml;View\AddJobView.xaml;View\ChooseJobView.xaml;View\MainWindow.xaml;View\RemoveJobView.xaml;
 
 False
