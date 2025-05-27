@@ -1,0 +1,158 @@
+<UserControl x:Class="Projet.Wpf.View.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:local="clr-namespace:Projet.Wpf.View"
+      mc:Ignorable="d"
+      d:DesignHeight="400" d:DesignWidth="700">
+
+    <Grid Background="#1A1B2E">
+        <StackPanel Margin="20">
+            <TextBlock Text="Settings" 
+                     FontSize="24" 
+                     Foreground="White" 
+                     Margin="0,0,0,20"/>
+
+            <!-- Add Blocking Programs Section -->
+            <Border Background="#252644" 
+                    CornerRadius="10" 
+                    Padding="15" 
+                    Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Add Blocking Programs" 
+                                 Foreground="White" 
+                                 FontSize="16" 
+                                 Margin="0,0,0,5"/>
+                        <TextBox x:Name="BlockingProgramInput"
+                                 Background="#1A1B2E"
+                                 Foreground="White"
+                                 BorderThickness="0"
+                                 Padding="10"
+                                 Text="Process Name"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" 
+                            Content="+" 
+                            Width="30" 
+                            Height="30"
+                            Background="#4B4D8C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Command="{Binding AddBlockingProgramCommand}"
+                            CommandParameter="{Binding ElementName=BlockingProgramInput, Path=Text}"
+                            Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+
+            <!-- Add File Extension Section -->
+            <Border Background="#252644" 
+                    CornerRadius="10" 
+                    Padding="15" 
+                    Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Add File extension to Encrypt" 
+                                 Foreground="White" 
+                                 FontSize="16" 
+                                 Margin="0,0,0,5"/>
+                        <TextBox x:Name="ExtensionInput"
+                                 Background="#1A1B2E"
+                                 Foreground="White"
+                                 BorderThickness="0"
+                                 Padding="10"
+                                 Text="File extension name (.txt)"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" 
+                            Content="+" 
+                            Width="30" 
+                            Height="30"
+                            Background="#4B4D8C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Command="{Binding AddExtensionCommand}"
+                            CommandParameter="{Binding ElementName=ExtensionInput, Path=Text}"
+                            Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+
+            <!-- Remove Blocking Programs Section -->
+            <Border Background="#252644" 
+                    CornerRadius="10" 
+                    Padding="15" 
+                    Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Remove Blocking Programs" 
+                                 Foreground="White" 
+                                 FontSize="16" 
+                                 Margin="0,0,0,5"/>
+                        <TextBox x:Name="RemoveBlockingProgramInput"
+                                 Background="#1A1B2E"
+                                 Foreground="White"
+                                 BorderThickness="0"
+                                 Padding="10"
+                                 Text="Process Name"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" 
+                            Content="-" 
+                            Width="30" 
+                            Height="30"
+                            Background="#4B4D8C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Command="{Binding RemoveBlockingProgramCommand}"
+                            CommandParameter="{Binding ElementName=RemoveBlockingProgramInput, Path=Text}"
+                            Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+
+            <!-- Remove File Extension Section -->
+            <Border Background="#252644" 
+                    CornerRadius="10" 
+                    Padding="15" 
+                    Margin="0,0,0,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Remove File extension to Encrypt" 
+                                 Foreground="White" 
+                                 FontSize="16" 
+                                 Margin="0,0,0,5"/>
+                        <TextBox x:Name="RemoveExtensionInput"
+                                 Background="#1A1B2E"
+                                 Foreground="White"
+                                 BorderThickness="0"
+                                 Padding="10"
+                                 Text="File extension name (.txt)"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" 
+                            Content="-" 
+                            Width="30" 
+                            Height="30"
+                            Background="#4B4D8C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Command="{Binding RemoveExtensionCommand}"
+                            CommandParameter="{Binding ElementName=RemoveExtensionInput, Path=Text}"
+                            Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl> 

@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NETCOREAPP;NETCOREAPP3_1;
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\App.xaml
-5237110293
+61717229032
 
-111874514846
+12441480015
 1931855806931
-Styles\ProgressBarStyles.xaml;View\AddJobView.xaml;View\ChooseJobView.xaml;View\MainWindow.xaml;View\RemoveJobView.xaml;
+Styles\ProgressBarStyles.xaml;View\AddJobView.xaml;View\ChooseJobView.xaml;View\MainWindow.xaml;View\RemoveJobView.xaml;View\SettingsPage.xaml;
 
 False
 

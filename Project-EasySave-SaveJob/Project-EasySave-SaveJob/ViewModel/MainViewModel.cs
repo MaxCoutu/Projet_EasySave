@@ -21,6 +21,18 @@ namespace Projet.ViewModel
         private readonly IPathProvider _paths;
         private readonly JobStatusViewModel _statusVM;
         private readonly Timer _refreshTimer;
+        private readonly Settings _settings;
+
+        private ViewModelBase _currentViewModel;
+        public ViewModelBase CurrentViewModel
+        {
+            get => _currentViewModel;
+            set
+            {
+                _currentViewModel = value;
+                OnPropertyChanged();
+            }
+        }
 
         public ObservableCollection<BackupJob> Jobs { get; }
         private ObservableCollection<BackupJob> _recentJobs;
@@ -50,35 +62,26 @@ namespace Projet.ViewModel
         public ICommand OpenSettingsCommand { get; }
         public ICommand ReturnToMainViewCommand { get; }
 
-        private ViewModelBase _currentViewModel;
-        public ViewModelBase CurrentViewModel
-        {
-            get => _currentViewModel;
-            set { _currentViewModel = value; OnPropertyChanged(); }
-        }
-
         public event Action AddJobRequested;
         public event Action RemoveJobRequested;
 
-        public MainViewModel(
-            IBackupService svc,
-            ILanguageService langService,
-            IPathProvider paths)
+        public MainViewModel(IBackupService svc, ILanguageService lang, IPathProvider paths)
         {
-            _svc = svc;
-            _lang = langService;
-            _paths = paths;
-            _langDir = Path.Combine(paths.GetBaseDir(), "Languages");
+            _svc = svc ?? throw new ArgumentNullException(nameof(svc));
+            _lang = lang ?? throw new ArgumentNullException(nameof(lang));
+            _paths = paths ?? throw new ArgumentNullException(nameof(paths));
+            _langDir = Path.Combine(AppContext.BaseDirectory, "Languages");
+            _settings = Settings.Load(paths);
 
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
-            RecentJobs = new ObservableCollection<BackupJob>();
+            _recentJobs = new ObservableCollection<BackupJob>();
             LoadRecentJobs();
             
             // Créer et configurer le JobStatusViewModel
             _statusVM = new JobStatusViewModel(paths);
             
             // Timer pour mettre à jour régulièrement l'état des tâches
-            _refreshTimer = new Timer(1000); // 1 seconde
+            _refreshTimer = new Timer(5000); // 5 secondes
             _refreshTimer.Elapsed += (s, e) => UpdateJobsStatus();
             _refreshTimer.Start();
 
@@ -120,7 +123,7 @@ namespace Projet.ViewModel
             SetEnglishCommand = new RelayCommand(_ =>
                 _lang.Load(Path.Combine(_langDir, "en.json")));
 
-            OpenSettingsCommand = new RelayCommand(_ => { /* Logique pour ouvrir les paramètres */ });
+            OpenSettingsCommand = new RelayCommand(_ => ShowSettingsView());
 
             ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
 
@@ -229,6 +232,11 @@ namespace Projet.ViewModel
             {
                 _statusVM.ApplyStatus(job);
             }
+        }
+
+        private void ShowSettingsView()
+        {
+            CurrentViewModel = new SettingsViewModel(_settings);
         }
 
         public void Dispose()

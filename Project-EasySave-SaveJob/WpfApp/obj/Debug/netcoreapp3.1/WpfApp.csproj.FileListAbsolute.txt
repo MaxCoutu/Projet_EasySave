@@ -139,3 +139,5 @@ C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.pdb
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.genruntimeconfig.cache
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\Styles\ProgressBarStyles.baml
+C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.baml
+C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.g.cs

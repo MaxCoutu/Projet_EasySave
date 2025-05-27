@@ -353,6 +353,24 @@
                                 </Setter.Value>
                             </Setter>
                         </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="SettingsViewModel">
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <Border Background="#FF25234E"
+                                                Width="700" Height="400"
+                                                CornerRadius="15"
+                                                Padding="20"
+                                                BorderBrush="#FF3B3A5E"
+                                                BorderThickness="1"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                            <ContentPresenter Content="{Binding}"/>
+                                        </Border>
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </ContentControl.Style>
@@ -375,6 +393,9 @@
                             <Setter Property="Visibility" Value="Visible"/>
                         </DataTrigger>
                         <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="ChooseJobViewModel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="SettingsViewModel">
                             <Setter Property="Visibility" Value="Visible"/>
                         </DataTrigger>
                     </Style.Triggers>
