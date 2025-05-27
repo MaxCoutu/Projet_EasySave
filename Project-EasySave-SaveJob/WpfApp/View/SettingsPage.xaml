@@ -6,35 +6,70 @@
       xmlns:local="clr-namespace:Projet.Wpf.View"
       mc:Ignorable="d"
       d:DesignHeight="400" d:DesignWidth="700">
-
-    <Grid Background="#1A1B2E">
-        <StackPanel Margin="20">
-            <TextBlock Text="Settings" 
-                     FontSize="24" 
-                     Foreground="White" 
-                     Margin="0,0,0,20"/>
-
+    <UserControl.Resources>
+        <Style x:Key="CircularButtonStyle" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse Fill="{TemplateBinding Background}"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="FontSize" Value="20"/>
+        </Style>
+        <Style x:Key="RoundedTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ScrollViewer x:Name="PART_ContentHost" 
+                                          Padding="{TemplateBinding Padding}"
+                                          Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <Grid Background="#FF25234E">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="181*"/>
+            <ColumnDefinition Width="169*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Width="500" HorizontalAlignment="Left" Margin="100,10,0,19" Grid.ColumnSpan="2">
             <!-- Add Blocking Programs Section -->
-            <Border Background="#252644" 
+            <Border Background="#FF302E66" 
                     CornerRadius="10" 
                     Padding="15" 
-                    Margin="0,0,0,10">
+                    Margin="0,0,0,10" 
+                    Width="455" 
+                    Height="83">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
+                    <StackPanel Grid.Column="0" Margin="0,0,0,-9">
                         <TextBlock Text="Add Blocking Programs" 
-                                 Foreground="White" 
-                                 FontSize="16" 
-                                 Margin="0,0,0,5"/>
+                                   Foreground="White" 
+                                   FontSize="16" 
+                                   FontWeight="Bold" Margin="0,-10,0,10" 
+                                   />
                         <TextBox x:Name="BlockingProgramInput"
-                                 Background="#1A1B2E"
-                                 Foreground="White"
+                                 Background="#CC19173D"
+                                 Foreground="#FF7B78AA"
                                  BorderThickness="0"
                                  Padding="10"
-                                 Text="Process Name"/>
+                                 Text="Process Name" 
+                                 Height="34" 
+                                 Width="376"
+                                 Style="{StaticResource RoundedTextBoxStyle}" TextChanged="BlockingProgramInput_TextChanged"/>
                     </StackPanel>
                     <Button Grid.Column="1" 
                             Content="+" 
@@ -43,33 +78,39 @@
                             Background="#4B4D8C"
                             Foreground="White"
                             BorderThickness="0"
+                            Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding AddBlockingProgramCommand}"
                             CommandParameter="{Binding ElementName=BlockingProgramInput, Path=Text}"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
-
             <!-- Add File Extension Section -->
-            <Border Background="#252644" 
+            <Border Background="#FF302E66" 
                     CornerRadius="10" 
                     Padding="15" 
-                    Margin="0,0,0,10">
+                    Margin="0,0,0,10" 
+                    Width="455" 
+                    Height="83">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
+                    <StackPanel Grid.Column="0" Margin="0,0,0,-8">
                         <TextBlock Text="Add File extension to Encrypt" 
-                                 Foreground="White" 
-                                 FontSize="16" 
-                                 Margin="0,0,0,5"/>
+                                   Foreground="White" 
+                                   FontSize="16" 
+                                   FontWeight="Bold" 
+                                   Margin="0,-10,0,10" 
+                                   HorizontalAlignment="Left"/>
                         <TextBox x:Name="ExtensionInput"
-                                 Background="#1A1B2E"
-                                 Foreground="White"
+                                 Background="#CC19173D"
+                                 Foreground="#FF7B78AA"
                                  BorderThickness="0"
                                  Padding="10"
-                                 Text="File extension name (.txt)"/>
+                                 Text="File extension name (.txt)" 
+                                 Height="34"
+                                 Style="{StaticResource RoundedTextBoxStyle}"/>
                     </StackPanel>
                     <Button Grid.Column="1" 
                             Content="+" 
@@ -78,33 +119,38 @@
                             Background="#4B4D8C"
                             Foreground="White"
                             BorderThickness="0"
+                            Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding AddExtensionCommand}"
                             CommandParameter="{Binding ElementName=ExtensionInput, Path=Text}"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
-
             <!-- Remove Blocking Programs Section -->
-            <Border Background="#252644" 
+            <Border Background="#FF302E66" 
                     CornerRadius="10" 
                     Padding="15" 
-                    Margin="0,0,0,10">
-                <Grid>
+                    Margin="0,0,0,10" 
+                    Width="455" 
+                    Height="83">
+                <Grid Margin="0,0,0,-5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
+                    <StackPanel Grid.Column="0" Margin="0,0,0,-5">
                         <TextBlock Text="Remove Blocking Programs" 
-                                 Foreground="White" 
-                                 FontSize="16" 
-                                 Margin="0,0,0,5"/>
+                                   Foreground="White" 
+                                   FontSize="16" 
+                                   FontWeight="Bold" 
+                                   Margin="0,-10,0,10"/>
                         <TextBox x:Name="RemoveBlockingProgramInput"
-                                 Background="#1A1B2E"
-                                 Foreground="White"
+                                 Background="#CC19173D"
+                                 Foreground="#FF7B78AA"
                                  BorderThickness="0"
                                  Padding="10"
-                                 Text="Process Name"/>
+                                 Text="Process Name" 
+                                 Height="34"
+                                 Style="{StaticResource RoundedTextBoxStyle}"/>
                     </StackPanel>
                     <Button Grid.Column="1" 
                             Content="-" 
@@ -113,33 +159,39 @@
                             Background="#4B4D8C"
                             Foreground="White"
                             BorderThickness="0"
+                            Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding RemoveBlockingProgramCommand}"
                             CommandParameter="{Binding ElementName=RemoveBlockingProgramInput, Path=Text}"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
-
             <!-- Remove File Extension Section -->
-            <Border Background="#252644" 
+            <Border Background="#FF302E66" 
                     CornerRadius="10" 
                     Padding="15" 
-                    Margin="0,0,0,10">
+                    Margin="0,0,0,10" 
+                    Width="455" 
+                    Height="83">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
+                    <StackPanel Grid.Column="0" Margin="0,0,0,-8">
                         <TextBlock Text="Remove File extension to Encrypt" 
-                                 Foreground="White" 
-                                 FontSize="16" 
-                                 Margin="0,0,0,5"/>
+                                   Foreground="White" 
+                                   FontSize="16" 
+                                   FontWeight="Bold" 
+                                   Margin="0,-10,0,10"/>
                         <TextBox x:Name="RemoveExtensionInput"
-                                 Background="#1A1B2E"
-                                 Foreground="White"
+                                 Background="#CC19173D"
+                                 Foreground="#FF7B78AA"
                                  BorderThickness="0"
                                  Padding="10"
-                                 Text="File extension name (.txt)"/>
+                                 Text="File extension name (.txt)" 
+                                 Height="34" 
+                                 RenderTransformOrigin="0.5,1.182"
+                                 Style="{StaticResource RoundedTextBoxStyle}" SelectionTextBrush="#FF7B78AA"/>
                     </StackPanel>
                     <Button Grid.Column="1" 
                             Content="-" 
@@ -148,6 +200,7 @@
                             Background="#4B4D8C"
                             Foreground="White"
                             BorderThickness="0"
+                            Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding RemoveExtensionCommand}"
                             CommandParameter="{Binding ElementName=RemoveExtensionInput, Path=Text}"
                             Margin="10,0,0,0"/>
@@ -155,4 +208,4 @@
             </Border>
         </StackPanel>
     </Grid>
-</UserControl> 
+</UserControl>

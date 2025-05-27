@@ -1,0 +1,174 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\ViewModel\\MainViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\ViewModel\\MainViewModel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\App.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\App.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj.user||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj.user||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml||{FA3CD31E-987B-443A-9B81-186104E8DAC1}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 7,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\ViewModel\\MainViewModel.cs",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\ViewModel\\MainViewModel.cs",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\ViewModel\\MainViewModel.cs",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\Project-EasySave-SaveJob\\ViewModel\\MainViewModel.cs",
+              "ViewState": "AgIAAE4AAAAAAAAAAAAkwGEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-18T07:18:48.918Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\App.xaml.cs",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\App.xaml.cs",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\App.xaml.cs",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\App.xaml.cs",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAkwBkAAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-18T07:18:09.84Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml.cs",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAkwCgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-18T07:17:54.224Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "AddJobView.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml.cs",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml.cs",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml.cs",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAkwBQAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-18T07:13:06.035Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "WpfApp.csproj.user",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj.user",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj.user",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj.user",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\WpfApp.csproj.user",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003464|",
+              "WhenOpened": "2025-05-17T14:46:52.188Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "ViewState": "AgIAAF0AAAAAAAAAAAAUwJUAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-05-17T13:23:19.389Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\View\\MainWindow.xaml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-05-17T13:22:51.563Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AddJobView.xaml",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAUwCIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-05-17T12:08:23.024Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "AddJobView.xaml",
+              "DocumentMoniker": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "RelativeDocumentMoniker": "Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "ToolTip": "C:\\Users\\jmail\\source\\repos\\MaxCoutu\\Projet_EasySave\\Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "RelativeToolTip": "Project-EasySave-SaveJob\\WpfApp\\View\\AddJobView.xaml",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAswA4AAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-05-17T12:06:46.79Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

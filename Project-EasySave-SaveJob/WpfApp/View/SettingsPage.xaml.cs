@@ -8,5 +8,10 @@ namespace Projet.Wpf.View
         {
             InitializeComponent();
         }
+
+        private void BlockingProgramInput_TextChanged(object sender, TextChangedEventArgs e)
+        {
+
+        }
     }
 } 
