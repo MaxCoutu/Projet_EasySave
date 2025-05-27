@@ -14,27 +14,69 @@ namespace Projet.Model
 
         public override async Task ExecuteAsync(BackupJob job, Action<StatusEntry> progressCallback)
         {
+            string sourceDir = job.SourceDir.Trim('"').Trim();
+            string targetDir = job.TargetDir.Trim('"').Trim();
+            
             List<string> files = Directory
-                .EnumerateFiles(job.SourceDir, "*", SearchOption.AllDirectories)
+                .EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories)
                 .ToList();
 
             long totalSize = files.Sum(f => new FileInfo(f).Length);
-            int total = files.Count;
-            int done = 0;
+            long bytesCopied = 0;
+            int totalFiles = files.Count;
+            int filesCopied = 0;
 
             foreach (string src in files)
             {
-                string rel = Path.GetRelativePath(job.SourceDir, src);
-                string dest = Path.Combine(job.TargetDir, rel);
+                string rel = Path.GetRelativePath(sourceDir, src);
+                string dest = Path.Combine(targetDir, rel);
+                
+                // Create directory structure if needed
+                string targetDirPath = Path.GetDirectoryName(dest);
+                if (!Directory.Exists(targetDirPath))
+                {
+                    Directory.CreateDirectory(targetDirPath);
+                }
 
+                // Get the file size before copying
+                long fileSize = new FileInfo(src).Length;
+                
+                // Copy the file
                 await CopyFileAsync(src, dest);
-                done++;
+                filesCopied++;
+                
+                // Update total bytes copied
+                bytesCopied += fileSize;
+                
+                // Calculate progress based on bytes, not file count
+                double progress = (double)bytesCopied / totalSize;
 
                 progressCallback?.Invoke(new StatusEntry(
-                    job.Name, src, dest, "ACTIVE",
-                    total, totalSize, total - done,
-                    done / (double)total));
+                    job.Name, 
+                    src, 
+                    dest, 
+                    "ACTIVE",
+                    totalFiles, 
+                    totalSize, 
+                    totalFiles - filesCopied,
+                    progress));
+                    
+                Console.WriteLine($"Progress: {progress:P2} ({bytesCopied}/{totalSize} bytes, {filesCopied}/{totalFiles} files)");
             }
+            
+            // Send one final update to ensure we show 100% completion
+            progressCallback?.Invoke(new StatusEntry(
+                job.Name,
+                string.Empty,
+                string.Empty,
+                "ACTIVE",
+                totalFiles,
+                totalSize,
+                0,
+                1.0 // 100% complete
+            ));
+            
+            Console.WriteLine($"Full Backup completed: {filesCopied} files, {bytesCopied} bytes transferred");
         }
     }
 }

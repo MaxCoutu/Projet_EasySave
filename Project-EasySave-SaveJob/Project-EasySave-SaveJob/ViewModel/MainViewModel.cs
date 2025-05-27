@@ -7,13 +7,14 @@ using System.Text.Json;
 using System.Windows.Input;
 using System.Timers;
 using System.Windows;
+using System.Threading.Tasks;
 using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
 
 namespace Projet.ViewModel
 {
-    public class MainViewModel : ViewModelBase
+    public class MainViewModel : ViewModelBase, IDisposable
     {
         private readonly IBackupService _svc;
         private readonly ILanguageService _lang;
@@ -22,6 +23,7 @@ namespace Projet.ViewModel
         private readonly JobStatusViewModel _statusVM;
         private readonly Timer _refreshTimer;
         private readonly Settings _settings;
+        private readonly ThreadPoolManager _threadPool;
 
         private ViewModelBase _currentViewModel;
         public ViewModelBase CurrentViewModel
@@ -49,10 +51,29 @@ namespace Projet.ViewModel
             set { _selected = value; OnPropertyChanged(); }
         }
 
+        private bool _isBackupRunning;
+        public bool IsBackupRunning
+        {
+            get => _isBackupRunning;
+            set
+            {
+                if (_isBackupRunning != value)
+                {
+                    _isBackupRunning = value;
+                    OnPropertyChanged();
+                    // Update command availability
+                    ((Infrastructure.RelayCommand)RunSelectedCmd).RaiseCanExecuteChanged();
+                    ((Infrastructure.RelayCommand)RunAllCmd).RaiseCanExecuteChanged();
+                    ((Infrastructure.RelayCommand)CancelBackupCmd).RaiseCanExecuteChanged();
+                }
+            }
+        }
+
         public ICommand AddJobCmd { get; }
         public ICommand RemoveJobCmd { get; }
         public ICommand RunSelectedCmd { get; }
         public ICommand RunAllCmd { get; }
+        public ICommand CancelBackupCmd { get; }
         public ICommand ShowAddJobViewCommand { get; }
         public ICommand ShowChooseJobViewCommand { get; }
         public ICommand ShowRemoveJobViewCommand { get; }
@@ -72,6 +93,7 @@ namespace Projet.ViewModel
             _paths = paths ?? throw new ArgumentNullException(nameof(paths));
             _langDir = Path.Combine(AppContext.BaseDirectory, "Languages");
             _settings = Settings.Load(paths);
+            _threadPool = ThreadPoolManager.Instance;
 
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
             _recentJobs = new ObservableCollection<BackupJob>();
@@ -81,114 +103,257 @@ namespace Projet.ViewModel
             _statusVM = new JobStatusViewModel(paths);
             
             // Timer pour mettre à jour régulièrement l'état des tâches
-            _refreshTimer = new Timer(5000); // 5 secondes
+            _refreshTimer = new Timer(2000); // 2 secondes
             _refreshTimer.Elapsed += (s, e) => UpdateJobsStatus();
             _refreshTimer.Start();
 
-            AddJobCmd = new RelayCommand(_ => AddJobRequested?.Invoke());
-            RemoveJobCmd = new RelayCommand(_ => RemoveJobRequested?.Invoke());
-            RunSelectedCmd = new RelayCommand(async _ =>
+            // Use the Infrastructure.RelayCommand explicitly to avoid using the ViewModel version
+            AddJobCmd = new Infrastructure.RelayCommand(_ => AddJobRequested?.Invoke());
+            RemoveJobCmd = new Infrastructure.RelayCommand(_ => RemoveJobRequested?.Invoke());
+            
+            RunSelectedCmd = new Infrastructure.RelayCommand(
+                async _ => await RunSelectedJobAsync(),
+                _ => !IsBackupRunning && _selected != null
+            );
+            
+            RunAllCmd = new Infrastructure.RelayCommand(
+                async _ => await RunAllJobsAsync(),
+                _ => !IsBackupRunning && Jobs.Count > 0
+            );
+            
+            CancelBackupCmd = new Infrastructure.RelayCommand(
+                _ => CancelBackup(),
+                _ => IsBackupRunning
+            );
+            
+            ShowAddJobViewCommand = new Infrastructure.RelayCommand(_ => ShowAddJobView());
+            ShowChooseJobViewCommand = new Infrastructure.RelayCommand(_ => ShowChooseJobView());
+            ShowRemoveJobViewCommand = new Infrastructure.RelayCommand(_ => RemoveJobRequested?.Invoke());
+
+            RunJobCmd = new Infrastructure.RelayCommand(async param =>
             {
-                if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
+                if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name) && !IsBackupRunning)
                 {
-                    await _svc.ExecuteBackupAsync(_selected.Name);
+                    await RunJobAsync(job);
                 }
             });
-            RunAllCmd = new RelayCommand(async _ =>
-            {
-                await _svc.ExecuteAllBackupsAsync();
-            });
-            ShowAddJobViewCommand = new RelayCommand(_ => ShowAddJobView());
-            ShowChooseJobViewCommand = new RelayCommand(_ => ShowChooseJobView());
-            ShowRemoveJobViewCommand = new RelayCommand(_ => RemoveJobRequested?.Invoke());
 
-            RunJobCmd = new RelayCommand(async param =>
-            {
-                if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name))
-                {
-                    // Mettre immédiatement à jour l'état pour une meilleure réactivité de l'UI
-                    job.State = "PENDING";
-                    job.Progression = 0.01; // Démarre la progression à 1% pour montrer visuellement que le job a démarré
-                    
-                    // Exécuter la sauvegarde
-                    await _svc.ExecuteBackupAsync(job.Name);
-                    
-                    // Forcer le rafraîchissement des tâches après l'exécution
-                    UpdateJobsStatus();
-                }
-            });
+            SetFrenchCommand = new Infrastructure.RelayCommand(_ =>
+                _threadPool.EnqueueGuiTask(async (ct) => {
+                    _lang.Load(Path.Combine(_langDir, "fr.json"));
+                }));
+                
+            SetEnglishCommand = new Infrastructure.RelayCommand(_ =>
+                _threadPool.EnqueueGuiTask(async (ct) => {
+                    _lang.Load(Path.Combine(_langDir, "en.json"));
+                }));
 
-            SetFrenchCommand = new RelayCommand(_ =>
-                _lang.Load(Path.Combine(_langDir, "fr.json")));
-            SetEnglishCommand = new RelayCommand(_ =>
-                _lang.Load(Path.Combine(_langDir, "en.json")));
+            OpenSettingsCommand = new Infrastructure.RelayCommand(_ => ShowSettingsView());
+            ReturnToMainViewCommand = new Infrastructure.RelayCommand(_ => CurrentViewModel = this);
 
-            OpenSettingsCommand = new RelayCommand(_ => ShowSettingsView());
-
-            ReturnToMainViewCommand = new RelayCommand(_ => CurrentViewModel = this);
-
-            _svc.StatusUpdated += s => { RefreshJobs(); LoadRecentJobs(); };
+            _svc.StatusUpdated += OnStatusUpdated;
 
             CurrentViewModel = this;
         }
 
+        private void OnStatusUpdated(StatusEntry status)
+        {
+            // Handle this on the GUI thread
+            _threadPool.EnqueueGuiTask(async (ct) => {
+                RefreshJobs();
+                LoadRecentJobs();
+                
+                // Check for end of backup
+                if (status.State == "END")
+                {
+                    // If it's the last job, set IsBackupRunning to false
+                    bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING");
+                    if (!anyActive)
+                    {
+                        IsBackupRunning = false;
+                    }
+                }
+            });
+        }
+
+        private async Task RunSelectedJobAsync()
+        {
+            if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
+            {
+                IsBackupRunning = true;
+                try
+                {
+                    // Update UI state immediately
+                    _selected.State = "PENDING";
+                    _selected.Progression = 0.01;
+                    
+                    // Execute backup
+                    await _svc.ExecuteBackupAsync(_selected.Name);
+                }
+                finally
+                {
+                    UpdateJobsStatus();
+                    // Will be set to false by the StatusUpdated event handler when complete
+                }
+            }
+        }
+
+        private async Task RunAllJobsAsync()
+        {
+            if (Jobs.Count > 0)
+            {
+                IsBackupRunning = true;
+                try
+                {
+                    // Mark all jobs as pending for UI feedback
+                    foreach (var job in Jobs)
+                    {
+                        job.State = "PENDING";
+                        job.Progression = 0.01;
+                    }
+                    
+                    // Execute all backups
+                    await _svc.ExecuteAllBackupsAsync();
+                }
+                finally
+                {
+                    UpdateJobsStatus();
+                    // Will be set to false by the StatusUpdated event handler when complete
+                }
+            }
+        }
+        
+        private async Task RunJobAsync(BackupJob job)
+        {
+            IsBackupRunning = true;
+            try
+            {
+                // Update UI state immediately
+                job.State = "PENDING";
+                job.Progression = 0.01;
+                
+                // Execute backup
+                await _svc.ExecuteBackupAsync(job.Name);
+            }
+            finally
+            {
+                UpdateJobsStatus();
+                // Will be set to false by the StatusUpdated event handler when complete
+            }
+        }
+
+        private void CancelBackup()
+        {
+            _svc.CancelAllBackups();
+            
+            // Update UI
+            foreach (var job in Jobs)
+            {
+                if (job.State == "ACTIVE" || job.State == "PENDING")
+                {
+                    job.State = "CANCELLED";
+                }
+            }
+            
+            IsBackupRunning = false;
+        }
+
         public void RefreshJobs()
         {
-            Jobs.Clear();
-            foreach (var job in _svc.GetJobs())
-                Jobs.Add(job);
+            // This should be called from the UI thread
+            try
+            {
+                var currentJobs = _svc.GetJobs().ToList();
+                
+                // Remove jobs that no longer exist
+                for (int i = Jobs.Count - 1; i >= 0; i--)
+                {
+                    if (!currentJobs.Any(j => j.Name == Jobs[i].Name))
+                    {
+                        Jobs.RemoveAt(i);
+                    }
+                }
+                
+                // Update or add jobs
+                foreach (var job in currentJobs)
+                {
+                    var existingJob = Jobs.FirstOrDefault(j => j.Name == job.Name);
+                    if (existingJob == null)
+                    {
+                        Jobs.Add(job);
+                    }
+                    else
+                    {
+                        // Update properties if needed
+                        existingJob.SourceDir = job.SourceDir;
+                        existingJob.TargetDir = job.TargetDir;
+                        existingJob.Strategy = job.Strategy;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error refreshing jobs: {ex.Message}");
+            }
         }
 
         private void LoadRecentJobs()
         {
-            RecentJobs.Clear();
-            string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
-            if (!File.Exists(statusPath))
-                return;
-
-            try
-            {
-                string json = File.ReadAllText(statusPath);
-                if (string.IsNullOrWhiteSpace(json))
-                    return;
-
-                var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
-                if (statusEntries == null || statusEntries.Count == 0)
-                    return;
-
-              
-               
-
-                var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                var recentJobs = new List<BackupJob>();
-
-                
-                foreach (var entry in statusEntries)
+            // Use the ThreadPoolManager for reading status files
+            _threadPool.EnqueueLoggingTask(async (ct) => {
+                try
                 {
-                    if (!addedJobs.Contains(entry.Name))
+                    string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
+                    if (!File.Exists(statusPath))
+                        return;
+
+                    string json = File.ReadAllText(statusPath);
+                    if (string.IsNullOrWhiteSpace(json))
+                        return;
+
+                    var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
+                    if (statusEntries == null || statusEntries.Count == 0)
+                        return;
+
+                    var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var recentJobs = new List<BackupJob>();
+
+                    foreach (var entry in statusEntries)
                     {
-                        var job = Jobs.FirstOrDefault(j => string.Equals(j.Name?.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase));
-                        if (job != null)
+                        if (!addedJobs.Contains(entry.Name))
                         {
-                            recentJobs.Add(job);
-                            addedJobs.Add(entry.Name);
-                            if (recentJobs.Count == 3)
-                                break;
+                            var job = Jobs.FirstOrDefault(j => string.Equals(j.Name?.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase));
+                            if (job != null)
+                            {
+                                recentJobs.Add(job);
+                                addedJobs.Add(entry.Name);
+                                if (recentJobs.Count == 3)
+                                    break;
+                            }
                         }
                     }
-                }
 
-                
-                recentJobs.Reverse();
-                foreach (var job in recentJobs)
-                {
-                    RecentJobs.Add(job);
+                    recentJobs.Reverse();
+                    
+                    // Update the ObservableCollection on the GUI thread
+                    _threadPool.EnqueueGuiTask(async (guiCt) => {
+                        RecentJobs.Clear();
+                        foreach (var job in recentJobs)
+                        {
+                            RecentJobs.Add(job);
+                        }
+                    });
                 }
-            }
-            catch
-            {
-                RecentJobs.Clear();
-            }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading recent jobs: {ex.Message}");
+                    
+                    // Clear the list on error
+                    _threadPool.EnqueueGuiTask(async (guiCt) => {
+                        RecentJobs.Clear();
+                    });
+                }
+            });
         }
 
         private void ShowAddJobView()
@@ -210,15 +375,17 @@ namespace Projet.ViewModel
 
         private void UpdateJobsStatus()
         {
-            try
-            {
-                // Simple mise à jour directe sans passer par le dispatcher
-                UpdateJobStatusInternal();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erreur lors de la mise à jour du statut: {ex.Message}");
-            }
+            // Use the GUI thread allocation for UI updates
+            _threadPool.EnqueueGuiTask(async (ct) => {
+                try
+                {
+                    UpdateJobStatusInternal();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erreur lors de la mise à jour du statut: {ex.Message}");
+                }
+            });
         }
 
         private void UpdateJobStatusInternal()
@@ -244,6 +411,9 @@ namespace Projet.ViewModel
             _refreshTimer?.Stop();
             _refreshTimer?.Dispose();
             _statusVM?.Dispose();
+            
+            // Unregister from events
+            _svc.StatusUpdated -= OnStatusUpdated;
         }
     }
 }

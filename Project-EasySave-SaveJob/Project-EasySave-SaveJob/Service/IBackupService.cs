@@ -16,6 +16,7 @@ namespace Projet.Service
 
         Task ExecuteBackupAsync(string name);
         Task ExecuteAllBackupsAsync();
+        void CancelAllBackups();
 
         IReadOnlyList<BackupJob> GetJobs();      
     }
