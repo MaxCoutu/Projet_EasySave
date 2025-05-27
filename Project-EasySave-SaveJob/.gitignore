@@ -1,109 +1,29 @@
-# Visual Studio / .NET specific
-.vs/
-*.suo
+# Ignore build output and user-generated files
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+*.tmp
 *.user
+*.suo
 *.userosscache
 *.sln.docstates
 *.userprefs
+*.vs/
 .vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.ionide/
-
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Ww][Ii][Nn]32/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
-Generated\ Files/
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
-
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
-**/Properties/launchSettings.json
-*.swp
-*.*~
-.DS_Store
-*.pidb
-*.service
-*_i.c
-*_p.c
-*_h.h
-*.ilk
-*.meta
-*.obj
-*.iobj
-*.pch
-*.pdb
-*.ipdb
-*.pgc
-*.pgd
-*.rsp
-*.sbr
-*.tlb
-*.tli
-*.tlh
-*.tmp
-*.tmp_proj
-*_wpftmp.csproj
-*.vspscc
-*.vssscc
-.builds
-*.pidb
-*.svclog
-*.scc
-
-# NuGet packages
-*.nupkg
-*.snupkg
-**/[Pp]ackages/*
-!**/[Pp]ackages/build/
-*.nuget.props
-*.nuget.targets
-
-# Visual Studio cache files
-# files ending in .cache can be ignored
-*.[Cc]ache
-# but keep track of directories ending in .cache
-!?*.[Cc]ache/
-
-# Others
-ClientBin/
-~$*
-*~
+.idea/
+*.sln.iml
 *.dbmdl
 *.dbproj.schemaview
 *.jfm
 *.pfx
 *.publishsettings
-orleans.codegen.cs
-
-# ReSharper
-_ReSharper*/
-*.[Rr]e[Ss]harper
-*.DotSettings.user
-
-# SQL Server files
 *.mdf
 *.ldf
 *.ndf
-
-# Business Intelligence projects
 *.rdl.data
 *.bim.layout
 *.bim_*.settings
@@ -111,39 +31,14 @@ _ReSharper*/
 *- [Bb]ackup.rdl
 *- [Bb]ackup ([0-9]).rdl
 *- [Bb]ackup ([0-9][0-9]).rdl
-
-# Microsoft Fakes
 FakesAssemblies/
-
-# Windows image file caches
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# Project specific
-# Add any project-specific files to ignore here
-# For example, your application's data or settings files
 Languages/*.json
-
-# Log files
 *.log
-
-# Editor temporary/working files
-.idea/
-*.swp
-*~
-.vs/
-*.sln.iml
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Temporary files created by Visual Studio
 .axoCover/*
-!.axoCover/settings.json
 coverage*.info
 coverage*.json
 coverage*.xml
@@ -153,18 +48,10 @@ coverage*.azurePipelines
 .coverage.*
 TestResult.xml
 nunit-*.xml
-
-# User-specific files
 *.rsuser
 *.dotCover
-
-# ASP.NET Scaffolding
 ScaffoldingReadMe.txt
-
-# StyleCop
 StyleCopReport.xml
-
-# Files built by Visual Studio
 *_i.c
 *_p.c
 *_h.h
@@ -173,7 +60,6 @@ StyleCopReport.xml
 *.obj
 *.iobj
 *.pch
-*.pdb
 *.ipdb
 *.pgc
 *.pgd
@@ -185,39 +71,51 @@ StyleCopReport.xml
 *.tmp
 *.tmp_proj
 *_wpftmp.csproj
-*.log
 *.vspscc
 *.vssscc
 .builds
 *.pidb
 *.svclog
 *.scc
-
-# Chutzpah Test files
 _Chutzpah*
-
-# JetBrains Rider
-.idea/
-*.sln.iml
-
-# GhostDoc plugin setting file
 *.GhostDoc.xml
-
-# Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
-
-# Local History for Visual Studio
 .localhistory/
-
-# BeatPulse healthcheck temp database
 healthchecksdb
-
-# Backup folder for Package Reference Convert tool in Visual Studio 2017
 MigrationBackup/
-
-# Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-
-# Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Allow only essential project files
+!*.cs
+!*.csproj
+!*.sln
+!*.json
+!*.xml
+!*.config
+!*.md
+!*.xaml
+!*.yml
+!*.png
+!*.jpg
+!*.jpeg
+!*.gif
+!*.ico
+!*.resx
+!*.txt
+!*.bat
+!*.ps1
+!*.sh
+!*.cmd
+!*.props
+!*.targets
+!*.nuspec
+!*.targets
+!*.editorconfig
+!*.gitattributes
+!*.gitignore
+
+# Exclude all other files by default
+# (uncomment the next line to be even stricter)
+# *
