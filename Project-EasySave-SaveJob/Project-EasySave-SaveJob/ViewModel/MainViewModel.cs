@@ -31,8 +31,17 @@ namespace Projet.ViewModel
             get => _currentViewModel;
             set
             {
+                var previousViewModel = _currentViewModel;
                 _currentViewModel = value;
                 OnPropertyChanged();
+                
+                // If we're returning to the main view from a different view, refresh jobs
+                if (_currentViewModel == this && previousViewModel != this)
+                {
+                    Console.WriteLine("Returned to main view - refreshing jobs");
+                    RefreshJobs();
+                    LoadRecentJobs();
+                }
             }
         }
 
@@ -82,6 +91,7 @@ namespace Projet.ViewModel
         public ICommand SetEnglishCommand { get; }
         public ICommand OpenSettingsCommand { get; }
         public ICommand ReturnToMainViewCommand { get; }
+        public ICommand RefreshJobsCommand { get; }
 
         public event Action AddJobRequested;
         public event Action RemoveJobRequested;
@@ -97,7 +107,12 @@ namespace Projet.ViewModel
 
             Jobs = new ObservableCollection<BackupJob>(_svc.GetJobs());
             _recentJobs = new ObservableCollection<BackupJob>();
-            LoadRecentJobs();
+            
+            // Immediately load all jobs into RecentJobs
+            foreach (var job in Jobs)
+            {
+                _recentJobs.Add(job);
+            }
             
             // Créer et configurer le JobStatusViewModel
             _statusVM = new JobStatusViewModel(paths);
@@ -150,6 +165,10 @@ namespace Projet.ViewModel
 
             OpenSettingsCommand = new Infrastructure.RelayCommand(_ => ShowSettingsView());
             ReturnToMainViewCommand = new Infrastructure.RelayCommand(_ => CurrentViewModel = this);
+            RefreshJobsCommand = new Infrastructure.RelayCommand(_ => {
+                Console.WriteLine("Manual refresh requested - using direct ForceRefreshJobs method");
+                ForceRefreshJobs();
+            });
 
             _svc.StatusUpdated += OnStatusUpdated;
 
@@ -160,18 +179,50 @@ namespace Projet.ViewModel
         {
             // Handle this on the GUI thread
             _threadPool.EnqueueGuiTask(async (ct) => {
-                RefreshJobs();
-                LoadRecentJobs();
-                
-                // Check for end of backup
-                if (status.State == "END")
-                {
-                    // If it's the last job, set IsBackupRunning to false
-                    bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING");
-                    if (!anyActive)
+                try {
+                    // Refresh the Jobs collection
+                    RefreshJobs();
+                    
+                    // Make sure all jobs in RecentJobs match current jobs
+                    var allJobs = _svc.GetJobs().ToList();
+                    
+                    // Update existing jobs in RecentJobs
+                    for (int i = 0; i < RecentJobs.Count; i++)
                     {
-                        IsBackupRunning = false;
+                        var matchingJob = allJobs.FirstOrDefault(j => j.Name == RecentJobs[i].Name);
+                        if (matchingJob == null)
+                        {
+                            // Job no longer exists, remove it
+                            RecentJobs.RemoveAt(i);
+                            i--;
+                        }
                     }
+                    
+                    // Add any missing jobs
+                    foreach (var job in allJobs)
+                    {
+                        if (!RecentJobs.Any(j => j.Name == job.Name))
+                        {
+                            RecentJobs.Add(job);
+                        }
+                    }
+                    
+                    // Update statuses
+                    UpdateJobStatusInternal();
+                    
+                    // Check for end of backup
+                    if (status.State == "END")
+                    {
+                        // If it's the last job, set IsBackupRunning to false
+                        bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING");
+                        if (!anyActive)
+                        {
+                            IsBackupRunning = false;
+                        }
+                    }
+                }
+                catch (Exception ex) {
+                    Console.WriteLine($"Error updating status: {ex.Message}");
                 }
             });
         }
@@ -299,59 +350,33 @@ namespace Projet.ViewModel
 
         private void LoadRecentJobs()
         {
-            // Use the ThreadPoolManager for reading status files
-            _threadPool.EnqueueLoggingTask(async (ct) => {
+            // Run on the GUI thread for UI updates
+            _threadPool.EnqueueGuiTask(async (ct) => {
                 try
                 {
-                    string statusPath = Path.Combine(_paths.GetStatusDir(), "status.json");
-                    if (!File.Exists(statusPath))
-                        return;
-
-                    string json = File.ReadAllText(statusPath);
-                    if (string.IsNullOrWhiteSpace(json))
-                        return;
-
-                    var statusEntries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
-                    if (statusEntries == null || statusEntries.Count == 0)
-                        return;
-
-                    var addedJobs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    var recentJobs = new List<BackupJob>();
-
-                    foreach (var entry in statusEntries)
-                    {
-                        if (!addedJobs.Contains(entry.Name))
-                        {
-                            var job = Jobs.FirstOrDefault(j => string.Equals(j.Name?.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase));
-                            if (job != null)
-                            {
-                                recentJobs.Add(job);
-                                addedJobs.Add(entry.Name);
-                                if (recentJobs.Count == 3)
-                                    break;
-                            }
-                        }
-                    }
-
-                    recentJobs.Reverse();
+                    // Clear existing recent jobs
+                    RecentJobs.Clear();
                     
-                    // Update the ObservableCollection on the GUI thread
-                    _threadPool.EnqueueGuiTask(async (guiCt) => {
-                        RecentJobs.Clear();
-                        foreach (var job in recentJobs)
-                        {
-                            RecentJobs.Add(job);
-                        }
-                    });
+                    // Get all jobs from the service
+                    var allJobs = _svc.GetJobs().ToList();
+                    Console.WriteLine($"LoadRecentJobs found {allJobs.Count} jobs");
+                    
+                    // Add all jobs to the RecentJobs collection
+                    foreach (var job in allJobs)
+                    {
+                        RecentJobs.Add(job);
+                        Console.WriteLine($"LoadRecentJobs added: {job.Name}");
+                    }
+                    
+                    // Update job status
+                    UpdateJobStatusInternal();
+                    
+                    // Ensure UI is notified of changes
+                    OnPropertyChanged(nameof(RecentJobs));
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error loading recent jobs: {ex.Message}");
-                    
-                    // Clear the list on error
-                    _threadPool.EnqueueGuiTask(async (guiCt) => {
-                        RecentJobs.Clear();
-                    });
                 }
             });
         }
@@ -361,8 +386,13 @@ namespace Projet.ViewModel
             var vm = new AddJobViewModel(_svc);
             vm.JobAdded += () =>
             {
+                // Force a full refresh of jobs
                 RefreshJobs();
+                
+                // Reload all jobs in the UI
                 LoadRecentJobs();
+                
+                // Return to main view
                 CurrentViewModel = this;
             };
             CurrentViewModel = vm;
@@ -379,11 +409,30 @@ namespace Projet.ViewModel
             _threadPool.EnqueueGuiTask(async (ct) => {
                 try
                 {
+                    // Debug: print jobs count
+                    Console.WriteLine($"Updating job status: Jobs.Count={Jobs.Count}, RecentJobs.Count={RecentJobs.Count}");
+                    
+                    // Force a refresh of the jobs list first
+                    RefreshJobs();
+                    
+                    // Make sure RecentJobs contains all jobs
+                    var allJobs = _svc.GetJobs().ToList();
+                    Console.WriteLine($"Service jobs count: {allJobs.Count}");
+                    
+                    // Clear and reload all jobs
+                    RecentJobs.Clear();
+                    foreach (var job in allJobs)
+                    {
+                        RecentJobs.Add(job);
+                        Console.WriteLine($"Added job to RecentJobs: {job.Name}");
+                    }
+                    
+                    // Update status for all jobs
                     UpdateJobStatusInternal();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Erreur lors de la mise à jour du statut: {ex.Message}");
+                    Console.WriteLine($"Error updating job status: {ex.Message}");
                 }
             });
         }
@@ -404,6 +453,37 @@ namespace Projet.ViewModel
         private void ShowSettingsView()
         {
             CurrentViewModel = new SettingsViewModel(_settings);
+        }
+
+        // Public method that can be called from external code to force jobs to display
+        public void ForceRefreshJobs()
+        {
+            Console.WriteLine("Force refresh called from external code");
+            
+            try {
+                // Get all jobs directly from the service
+                var allJobs = _svc.GetJobs();
+                Console.WriteLine($"ForceRefreshJobs found {allJobs.Count} jobs");
+                
+                // Clear and immediately rebuild the RecentJobs collection
+                RecentJobs.Clear();
+                
+                // Add all jobs directly
+                foreach (var job in allJobs)
+                {
+                    RecentJobs.Add(job);
+                    Console.WriteLine($"ForceRefreshJobs added: {job.Name}");
+                }
+                
+                // Update job status immediately
+                UpdateJobStatusInternal();
+                
+                // Notify UI
+                OnPropertyChanged(nameof(RecentJobs));
+            }
+            catch (Exception ex) {
+                Console.WriteLine($"Error in ForceRefreshJobs: {ex.Message}");
+            }
         }
 
         public void Dispose()

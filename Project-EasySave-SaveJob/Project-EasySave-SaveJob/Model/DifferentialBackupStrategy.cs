@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Projet.Infrastructure;
 
@@ -10,109 +9,71 @@ namespace Projet.Model
 {
     public sealed class DifferentialBackupStrategy : BackupStrategyBase
     {
-        public override string Type => "Diff";
+        public override string Type => "Differential";
 
         public override async Task ExecuteAsync(BackupJob job, Action<StatusEntry> progressCallback)
         {
             string sourceDir = job.SourceDir.Trim('"').Trim();
             string targetDir = job.TargetDir.Trim('"').Trim();
             
-            if (!Directory.Exists(sourceDir))
+            IEnumerable<string> allFiles =
+                Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories);
+
+            List<string> toCopy = new List<string>();
+            foreach (string src in allFiles)
             {
-                throw new DirectoryNotFoundException($"Source directory not found: {sourceDir}");
+                string rel = Path.GetRelativePath(sourceDir, src);
+                string dest = Path.Combine(targetDir, rel);
+
+                if (!File.Exists(dest) ||
+                    File.GetLastWriteTimeUtc(src) > File.GetLastWriteTimeUtc(dest))
+                {
+                    toCopy.Add(src);
+                }
             }
 
-            if (!Directory.Exists(targetDir))
-            {
-                Directory.CreateDirectory(targetDir);
-            }
-
-            // Get all source files
-            List<string> sourceFiles = Directory
-                .EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories)
-                .ToList();
-
-            // Calculate total size for progress tracking
-            long totalSize = sourceFiles.Sum(f => new FileInfo(f).Length);
-            long bytesCopied = 0; // Tracks actual bytes copied
-            long bytesProcessed = 0; // Tracks total bytes processed (copied + skipped)
-            int totalFiles = sourceFiles.Count;
-            int filesProcessed = 0;
+            long totalSize = toCopy.Sum(f => new FileInfo(f).Length);
+            long bytesCopied = 0;
+            int totalFiles = toCopy.Count;
             int filesCopied = 0;
 
-            // Process each source file
-            foreach (string sourceFile in sourceFiles)
+            foreach (string src in toCopy)
             {
-                // Calculate relative path
-                string relPath = Path.GetRelativePath(sourceDir, sourceFile);
-                string targetFile = Path.Combine(targetDir, relPath);
-                
-                bool needsCopy = true;
-                var sourceInfo = new FileInfo(sourceFile);
-                long fileSize = sourceInfo.Length;
+                string rel = Path.GetRelativePath(sourceDir, src);
+                string dest = Path.Combine(targetDir, rel);
 
-                // Check if the target file exists
-                if (File.Exists(targetFile))
+                // Create directory structure if needed
+                string targetDirPath = Path.GetDirectoryName(dest);
+                if (!Directory.Exists(targetDirPath))
                 {
-                    var targetInfo = new FileInfo(targetFile);
-
-                    // Compare last write time and size to determine if it needs to be copied
-                    // Only copy if the source file is newer or different size
-                    if (sourceInfo.LastWriteTime <= targetInfo.LastWriteTime &&
-                        sourceInfo.Length == targetInfo.Length)
-                    {
-                        needsCopy = false;
-                    }
+                    Directory.CreateDirectory(targetDirPath);
                 }
-
-                if (needsCopy)
+                
+                // Get the file size before copying
+                long fileSize = new FileInfo(src).Length;
+                
+                // Use the base class implementation for file copying with progress tracking
+                await CopyFileWithProgressAsync(src, dest, (bytesTransferred, isComplete) =>
                 {
-                    // Create directory structure if needed
-                    string targetDirPath = Path.GetDirectoryName(targetFile);
-                    if (!Directory.Exists(targetDirPath))
-                    {
-                        Directory.CreateDirectory(targetDirPath);
-                    }
+                    // Update progress based on actual bytes transferred, not file count
+                    long currentBytesCopied = bytesCopied + bytesTransferred;
+                    double progress = totalSize > 0 ? (double)currentBytesCopied / totalSize : 1.0;
                     
-                    // Copy the file
-                    await CopyFileAsync(sourceFile, targetFile);
-                    filesCopied++;
-                    bytesCopied += fileSize;
-                }
-
-                // Update progress based on bytes processed (regardless of whether they were copied)
-                bytesProcessed += fileSize;
-                filesProcessed++;
+                    progressCallback?.Invoke(new StatusEntry(
+                        job.Name, 
+                        src, 
+                        dest, 
+                        "ACTIVE",
+                        totalFiles, 
+                        totalSize, 
+                        totalFiles - filesCopied,
+                        progress * 100.0)); // Convert to percentage (0-100)
+                });
                 
-                // Calculate progress based on bytes, not file count
-                double progress = (double)bytesProcessed / totalSize;
-
-                // Report progress
-                progressCallback?.Invoke(new StatusEntry(
-                    job.Name,
-                    sourceFile,
-                    needsCopy ? targetFile : string.Empty,
-                    "ACTIVE",
-                    totalFiles,
-                    totalSize,
-                    totalFiles - filesProcessed,
-                    progress
-                ));
+                // Update counters after file is complete
+                bytesCopied += fileSize;
+                filesCopied++;
             }
-
-            // Send one final update to ensure we show 100% completion
-            progressCallback?.Invoke(new StatusEntry(
-                job.Name,
-                string.Empty,
-                string.Empty,
-                "ACTIVE",
-                totalFiles,
-                totalSize,
-                0,
-                1.0 // 100% complete
-            ));
-
-            Console.WriteLine($"Differential Backup completed: {filesCopied} of {totalFiles} files copied, {bytesCopied} of {totalSize} bytes transferred");
         }
     }
 }

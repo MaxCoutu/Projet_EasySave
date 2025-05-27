@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Projet.Infrastructure;
 
@@ -41,27 +40,27 @@ namespace Projet.Model
                 // Get the file size before copying
                 long fileSize = new FileInfo(src).Length;
                 
-                // Copy the file
-                await CopyFileAsync(src, dest);
-                filesCopied++;
-                
-                // Update total bytes copied
-                bytesCopied += fileSize;
-                
-                // Calculate progress based on bytes, not file count
-                double progress = (double)bytesCopied / totalSize;
-
-                progressCallback?.Invoke(new StatusEntry(
-                    job.Name, 
-                    src, 
-                    dest, 
-                    "ACTIVE",
-                    totalFiles, 
-                    totalSize, 
-                    totalFiles - filesCopied,
-                    progress));
+                // Use the base class implementation for file copying with progress tracking
+                await CopyFileWithProgressAsync(src, dest, (bytesTransferred, isComplete) =>
+                {
+                    // Update progress based on actual bytes transferred, not file count
+                    long currentBytesCopied = bytesCopied + bytesTransferred;
+                    double progress = totalSize > 0 ? (double)currentBytesCopied / totalSize : 1.0;
                     
-                Console.WriteLine($"Progress: {progress:P2} ({bytesCopied}/{totalSize} bytes, {filesCopied}/{totalFiles} files)");
+                    progressCallback?.Invoke(new StatusEntry(
+                        job.Name, 
+                        src, 
+                        dest, 
+                        "ACTIVE",
+                        totalFiles, 
+                        totalSize, 
+                        totalFiles - filesCopied,
+                        progress * 100.0)); // Convert to percentage (0-100)
+                });
+                
+                // Update counters after file is complete
+                bytesCopied += fileSize;
+                filesCopied++;
             }
             
             // Send one final update to ensure we show 100% completion
@@ -73,10 +72,35 @@ namespace Projet.Model
                 totalFiles,
                 totalSize,
                 0,
-                1.0 // 100% complete
+                100.0 // 100% complete
             ));
             
             Console.WriteLine($"Full Backup completed: {filesCopied} files, {bytesCopied} bytes transferred");
+        }
+
+        private async Task CopyFileWithProgressAsync(string src, string dest, Action<long, bool> progressCallback)
+        {
+            const int bufferSize = 81920;
+            long totalBytesCopied = 0;
+            
+            using (var sourceStream = new FileStream(src, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, true))
+            using (var destStream = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, true))
+            {
+                var buffer = new byte[bufferSize];
+                int bytesRead;
+                
+                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                {
+                    await destStream.WriteAsync(buffer, 0, bytesRead);
+                    totalBytesCopied += bytesRead;
+                    
+                    // Report progress during copy
+                    progressCallback?.Invoke(totalBytesCopied, false);
+                }
+            }
+            
+            // Final progress update
+            progressCallback?.Invoke(totalBytesCopied, true);
         }
     }
 }
