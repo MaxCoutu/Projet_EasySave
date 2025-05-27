@@ -195,7 +195,7 @@
                         BorderBrush="#FF3B3A5E"
                         BorderThickness="1"
                         Margin="30,10,0,10">
-                    <ScrollViewer VerticalScrollBarVisibility="Disabled">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
                             <!-- Title -->
                             <TextBlock Text="{loc:Loc recent_title}"
@@ -358,14 +358,17 @@
                                 <Setter.Value>
                                     <DataTemplate>
                                         <Border Background="#FF25234E"
-                                                Width="700" Height="400"
+                                                Width="700" MinHeight="400"
+                                                MaxHeight="800"
                                                 CornerRadius="15"
                                                 Padding="20"
                                                 BorderBrush="#FF3B3A5E"
                                                 BorderThickness="1"
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center">
-                                            <ContentPresenter Content="{Binding}"/>
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <ContentPresenter Content="{Binding}"/>
+                                            </ScrollViewer>
                                         </Border>
                                     </DataTemplate>
                                 </Setter.Value>

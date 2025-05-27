@@ -67,6 +67,9 @@
                                  BorderThickness="0"
                                  Padding="10"
                                  Text="Process Name" 
+                                 Tag="Process Name" 
+                                 GotFocus="TextBox_GotFocus"
+                                 LostFocus="TextBox_LostFocus"
                                  Height="34" 
                                  Width="376"
                                  Style="{StaticResource RoundedTextBoxStyle}" TextChanged="BlockingProgramInput_TextChanged"/>
@@ -81,6 +84,7 @@
                             Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding AddBlockingProgramCommand}"
                             CommandParameter="{Binding ElementName=BlockingProgramInput, Path=Text}"
+                            Click="AddBlockingProgram_Click"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
@@ -109,6 +113,9 @@
                                  BorderThickness="0"
                                  Padding="10"
                                  Text="File extension name (.txt)" 
+                                 Tag="File extension name (.txt)" 
+                                 GotFocus="TextBox_GotFocus"
+                                 LostFocus="TextBox_LostFocus"
                                  Height="34"
                                  Style="{StaticResource RoundedTextBoxStyle}"/>
                     </StackPanel>
@@ -122,6 +129,7 @@
                             Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding AddExtensionCommand}"
                             CommandParameter="{Binding ElementName=ExtensionInput, Path=Text}"
+                            Click="AddExtension_Click"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
@@ -149,6 +157,9 @@
                                  BorderThickness="0"
                                  Padding="10"
                                  Text="Process Name" 
+                                 Tag="Process Name" 
+                                 GotFocus="TextBox_GotFocus"
+                                 LostFocus="TextBox_LostFocus"
                                  Height="34"
                                  Style="{StaticResource RoundedTextBoxStyle}"/>
                     </StackPanel>
@@ -162,6 +173,7 @@
                             Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding RemoveBlockingProgramCommand}"
                             CommandParameter="{Binding ElementName=RemoveBlockingProgramInput, Path=Text}"
+                            Click="RemoveBlockingProgram_Click"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
@@ -189,6 +201,9 @@
                                  BorderThickness="0"
                                  Padding="10"
                                  Text="File extension name (.txt)" 
+                                 Tag="File extension name (.txt)" 
+                                 GotFocus="TextBox_GotFocus"
+                                 LostFocus="TextBox_LostFocus"
                                  Height="34" 
                                  RenderTransformOrigin="0.5,1.182"
                                  Style="{StaticResource RoundedTextBoxStyle}" SelectionTextBrush="#FF7B78AA"/>
@@ -203,6 +218,7 @@
                             Style="{StaticResource CircularButtonStyle}"
                             Command="{Binding RemoveExtensionCommand}"
                             CommandParameter="{Binding ElementName=RemoveExtensionInput, Path=Text}"
+                            Click="RemoveExtension_Click"
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>

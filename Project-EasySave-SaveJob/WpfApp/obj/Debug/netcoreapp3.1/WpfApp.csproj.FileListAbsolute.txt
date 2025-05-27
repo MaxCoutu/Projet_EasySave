@@ -102,6 +102,9 @@ C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\Wp
 C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.dll
 C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.pdb
 C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.genruntimeconfig.cache
+C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\Styles\ProgressBarStyles.baml
+C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.g.cs
+C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.baml
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\bin\Debug\netcoreapp3.1\Project-EasySave.deps.json
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\bin\Debug\netcoreapp3.1\Project-EasySave.runtimeconfig.json
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\bin\Debug\netcoreapp3.1\Project-EasySave.runtimeconfig.dev.json
@@ -115,11 +118,13 @@ C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\bin\Debug\netcoreapp3.1\Project-EasySave.dll
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\bin\Debug\netcoreapp3.1\Project-EasySave.pdb
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.csproj.AssemblyReference.cache
+C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\Styles\ProgressBarStyles.baml
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\RemoveJobView.baml
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\AddJobView.g.cs
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\ChooseJobView.g.cs
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\MainWindow.g.cs
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\RemoveJobView.g.cs
+C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.g.cs
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\App.g.cs
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\GeneratedInternalTypeHelper.g.cs
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp_MarkupCompile.cache
@@ -128,6 +133,7 @@ C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\AddJobView.baml
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\ChooseJobView.baml
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\MainWindow.baml
+C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.baml
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.g.resources
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.AssemblyInfoInputs.cache
@@ -138,9 +144,3 @@ C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.dll
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.pdb
 C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\WpfApp.genruntimeconfig.cache
-C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\Styles\ProgressBarStyles.baml
-C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.baml
-C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.g.cs
-C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\Styles\ProgressBarStyles.baml
-C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.g.cs
-C:\Users\jmail\source\repos\MaxCoutu\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\obj\Debug\netcoreapp3.1\View\SettingsPage.baml
