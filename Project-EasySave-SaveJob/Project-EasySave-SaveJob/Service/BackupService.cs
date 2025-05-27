@@ -23,12 +23,20 @@ namespace Projet.Service
             _repo = repo;
             _settings = settings;
             _jobs = new List<BackupJob>(_repo.Load());
+            
+            // Debug output to verify if jobs are loaded
+            Console.WriteLine($"BackupService initialized with {_jobs.Count} jobs:");
+            foreach (var job in _jobs)
+            {
+                Console.WriteLine($"  - Job: {job.Name}, Source: {job.SourceDir}, Target: {job.TargetDir}");
+            }
         }
 
         public void AddJob(BackupJob job)
         {
             _jobs.Add(job);
             _repo.Save(_jobs);
+            Console.WriteLine($"Added job: {job.Name}");
         }
 
         public void RemoveJob(string name)
@@ -41,6 +49,8 @@ namespace Projet.Service
 
         public async Task ExecuteBackupAsync(string name)
         {
+            Console.WriteLine($"Starting backup for job: {name}");
+            
             if (PackageBlocker.IsBlocked(_settings))
             {
                 Console.WriteLine("Blocked package running — job skipped.");
@@ -70,6 +80,7 @@ namespace Projet.Service
 
         public async Task ExecuteAllBackupsAsync()
         {
+            Console.WriteLine($"Starting all backups. Total jobs: {_jobs.Count}");
             foreach (var job in _jobs)
             {
                 if (PackageBlocker.IsBlocked(_settings)) break;
@@ -82,16 +93,22 @@ namespace Projet.Service
             // Nettoyer les chemins
             string cleanedSourceDir = job.SourceDir.Trim('"').Trim();
             string cleanedTargetDir = job.TargetDir.Trim('"').Trim();
+            
+            Console.WriteLine($"Processing job: {job.Name}");
+            Console.WriteLine($"Source dir: {cleanedSourceDir}");
+            Console.WriteLine($"Target dir: {cleanedTargetDir}");
 
             // Vérifier l'existence du répertoire source
             if (!Directory.Exists(cleanedSourceDir))
             {
+                Console.WriteLine($"Source directory does not exist: {cleanedSourceDir}");
                 throw new DirectoryNotFoundException($"Le répertoire source '{cleanedSourceDir}' n'existe pas.");
             }
 
             // Créer le répertoire cible s'il n'existe pas
             if (!Directory.Exists(cleanedTargetDir))
             {
+                Console.WriteLine($"Creating target directory: {cleanedTargetDir}");
                 Directory.CreateDirectory(cleanedTargetDir);
             }
 
@@ -100,6 +117,8 @@ namespace Projet.Service
                 var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
                 long totalSize = files.Sum(f => new FileInfo(f).Length);
                 int total = files.Count, left = total;
+                
+                Console.WriteLine($"Found {total} files to copy, total size: {totalSize} bytes");
 
                 foreach (string src in files)
                 {
@@ -112,15 +131,21 @@ namespace Projet.Service
                     string rel = Path.GetRelativePath(cleanedSourceDir, src);
                     string dest = Path.Combine(cleanedTargetDir, rel);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    
+                    Console.WriteLine($"Copying: {src} -> {dest}");
 
                     var swCopy = System.Diagnostics.Stopwatch.StartNew();
                     await Task.Run(() => File.Copy(src, dest, true));
                     swCopy.Stop();
+                    
+                    Console.WriteLine($"Copy completed in {swCopy.ElapsedMilliseconds}ms");
 
                     int encMs = 0;
                     if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
                     {
+                        Console.WriteLine($"Encrypting file: {dest}");
                         encMs = CryptoSoftHelper.Encrypt(dest, _settings);
+                        Console.WriteLine($"Encryption completed in {encMs}ms");
                     }
 
                     _logger.LogEvent(new LogEntry
@@ -146,18 +171,25 @@ namespace Projet.Service
                         NbFilesLeftToDo = left,
                         Progression = (total - left) / (double)total
                     });
+                    
+                    Console.WriteLine($"Progress: {(total - left)}/{total} files ({(total - left) / (double)total:P0})");
                 }
+                
+                Console.WriteLine($"Backup job completed successfully: {job.Name}");
             }
             catch (UnauthorizedAccessException ex)
             {
+                Console.WriteLine($"Access denied: {ex.Message}");
                 throw new UnauthorizedAccessException($"Accès refusé au répertoire '{cleanedSourceDir}' : {ex.Message}", ex);
             }
             catch (IOException ex)
             {
+                Console.WriteLine($"I/O error: {ex.Message}");
                 throw new IOException($"Erreur d'E/S dans '{cleanedSourceDir}' : {ex.Message}", ex);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
                 throw new Exception($"Erreur inattendue dans '{cleanedSourceDir}' : {ex.Message}", ex);
             }
         }
