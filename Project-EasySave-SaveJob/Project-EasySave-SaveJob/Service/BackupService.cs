@@ -208,20 +208,44 @@ namespace Projet.Service
         {
             Console.WriteLine($"Pausing job: {name}");
             
-            if (_jobStates.ContainsKey(name) && !_jobStates[name].IsPaused)
+            try
             {
-                _jobStates[name].IsPaused = true;
-                _jobStates[name].PauseEvent.Reset(); // Block threads waiting on this event
-                _jobStates[name].State = "PAUSED";
-                
-                // Report the paused state
-                _threadPool.EnqueueLoggingTask(async (ct) => 
+                if (_jobStates.ContainsKey(name) && !_jobStates[name].IsPaused)
                 {
-                    Report(new StatusEntry { 
-                        Name = name, 
-                        State = "PAUSED" 
+                    _jobStates[name].IsPaused = true;
+                    _jobStates[name].State = "PAUSED";
+                    
+                    // Reset the pause event in a try-catch to handle any potential issues
+                    try
+                    {
+                        _jobStates[name].PauseEvent.Reset();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error resetting pause event: {ex.Message}");
+                        // Create a new pause event if the current one is corrupted
+                        _jobStates[name].PauseEvent = new ManualResetEvent(false);
+                    }
+                    
+                    // Report the paused state
+                    _threadPool.EnqueueLoggingTask(async (ct) => 
+                    {
+                        Report(new StatusEntry { 
+                            Name = name, 
+                            State = "PAUSED" 
+                        });
                     });
-                });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error pausing job {name}: {ex.Message}");
+                // Ensure the job can be resumed even if pause fails
+                if (_jobStates.ContainsKey(name))
+                {
+                    _jobStates[name].IsPaused = false;
+                    _jobStates[name].PauseEvent?.Set();
+                }
             }
         }
         
@@ -229,20 +253,44 @@ namespace Projet.Service
         {
             Console.WriteLine($"Resuming job: {name}");
             
-            if (_jobStates.ContainsKey(name) && _jobStates[name].IsPaused)
+            try
             {
-                _jobStates[name].IsPaused = false;
-                _jobStates[name].PauseEvent.Set(); // Unblock threads waiting on this event
-                _jobStates[name].State = "ACTIVE";
-                
-                // Report the resumed state
-                _threadPool.EnqueueLoggingTask(async (ct) => 
+                if (_jobStates.ContainsKey(name) && _jobStates[name].IsPaused)
                 {
-                    Report(new StatusEntry { 
-                        Name = name, 
-                        State = "ACTIVE" 
+                    _jobStates[name].IsPaused = false;
+                    _jobStates[name].State = "ACTIVE";
+                    
+                    // Set the pause event in a try-catch to handle any potential issues
+                    try
+                    {
+                        _jobStates[name].PauseEvent.Set();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error setting pause event: {ex.Message}");
+                        // Create a new pause event if the current one is corrupted
+                        _jobStates[name].PauseEvent = new ManualResetEvent(true);
+                    }
+                    
+                    // Report the resumed state
+                    _threadPool.EnqueueLoggingTask(async (ct) => 
+                    {
+                        Report(new StatusEntry { 
+                            Name = name, 
+                            State = "ACTIVE" 
+                        });
                     });
-                });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error resuming job {name}: {ex.Message}");
+                // Ensure the job can continue even if resume fails
+                if (_jobStates.ContainsKey(name))
+                {
+                    _jobStates[name].IsPaused = false;
+                    _jobStates[name].PauseEvent?.Set();
+                }
             }
         }
         
@@ -292,186 +340,222 @@ namespace Projet.Service
             // Update job state to active
             _jobStates[job.Name].State = "ACTIVE";
             
-            // Rest of method continues as before, but with modifications for pause/cancel support...
-            
-            // Clean the paths
-            string cleanedSourceDir = job.SourceDir.Trim('"').Trim();
-            string cleanedTargetDir = job.TargetDir.Trim('"').Trim();
-            
-            Console.WriteLine($"Processing job: {job.Name}");
-            Console.WriteLine($"Source dir: {cleanedSourceDir}");
-            Console.WriteLine($"Target dir: {cleanedTargetDir}");
-
-            // Check source directory
-            if (!Directory.Exists(cleanedSourceDir))
-            {
-                Console.WriteLine($"Source directory does not exist: {cleanedSourceDir}");
-                throw new DirectoryNotFoundException($"Le répertoire source '{cleanedSourceDir}' n'existe pas.");
-            }
-
-            // Create target directory if needed
-            if (!Directory.Exists(cleanedTargetDir))
-            {
-                Console.WriteLine($"Creating target directory: {cleanedTargetDir}");
-                Directory.CreateDirectory(cleanedTargetDir);
-            }
-
-            // Get files to copy
-            var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
-            
-            // Calculate total size
-            long totalSize = files.Sum(f => new FileInfo(f).Length);
-            long bytesCopied = 0;
-            int totalFiles = files.Count;
-            int filesCopied = 0;
-            
-            Console.WriteLine($"Found {totalFiles} files to copy, total size: {totalSize} bytes");
-
-            // Process files
-            var copyTasks = new List<Task>();
-            foreach (string src in files)
-            {
-                // Check for cancellation
-                cancellationToken.ThrowIfCancellationRequested();
-                
-                // Check for pause
-                pauseEvent.WaitOne();
-                
-                // Skip if package blocker
-                if (PackageBlocker.IsBlocked(_settings))
-                {
-                    Console.WriteLine("Backup interrupted: package blocked.");
-                    return;
-                }
-
-                string rel = Path.GetRelativePath(cleanedSourceDir, src);
-                string dest = Path.Combine(cleanedTargetDir, rel);
-                
-                // Create directories
-                await _threadPool.EnqueueLoggingTask(async (ct) => 
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                });
-                
-                // Local copies for closure
-                string srcLocal = src;
-                string destLocal = dest;
-                
-                // Get file size
-                long fileSize = new FileInfo(srcLocal).Length;
-                
-                // Copy file
-                var copyTask = _threadPool.EnqueueCopyTask(async (ct) =>
-                {
-                    try
-                    {
-                        // Process cancellation during file copy
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            cancellationToken.ThrowIfCancellationRequested();
-                        }
-                        
-                        // Check for pause before starting copy
-                        pauseEvent.WaitOne();
-                        
-                        Console.WriteLine($"Copying: {srcLocal} -> {destLocal}");
-
-                        var swCopy = System.Diagnostics.Stopwatch.StartNew();
-                        await CopyFileWithPauseAndCancellationSupportAsync(srcLocal, destLocal, pauseEvent, cancellationToken);
-                        swCopy.Stop();
-                        
-                        Console.WriteLine($"Copy completed in {swCopy.ElapsedMilliseconds}ms");
-
-                        // Process file encryption if needed
-                        int encMs = 0;
-                        if (_settings.CryptoExtensions.Contains(Path.GetExtension(srcLocal).ToLower()))
-                        {
-                            // Check for cancellation before encryption
-                            cancellationToken.ThrowIfCancellationRequested();
-                            
-                            // Check for pause before encryption
-                            pauseEvent.WaitOne();
-                            
-                            Console.WriteLine($"Encrypting file: {destLocal}");
-                            encMs = CryptoSoftHelper.Encrypt(destLocal, _settings);
-                            Console.WriteLine($"Encryption completed in {encMs}ms");
-                        }
-
-                        // Log the event
-                        await _threadPool.EnqueueLoggingTask(async (logCt) =>
-                        {
-                            _logger.LogEvent(new LogEntry
-                            {
-                                Timestamp = DateTime.UtcNow,
-                                JobName = job.Name,
-                                SourcePath = srcLocal,
-                                DestPath = destLocal,
-                                FileSize = fileSize,
-                                TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
-                                EncryptionTimeMs = encMs
-                            });
-                        });
-
-                        // Update progress
-                        long currentBytesCopied = Interlocked.Add(ref bytesCopied, fileSize);
-                        int currentFilesCopied = Interlocked.Increment(ref filesCopied);
-                        
-                        // Calculate progress
-                        double progress = (double)currentBytesCopied / totalSize;
-                        
-                        // Report status
-                        await _threadPool.EnqueueLoggingTask(async (logCt) =>
-                        {
-                            Report(new StatusEntry
-                            {
-                                Name = job.Name,
-                                SourceFilePath = srcLocal,
-                                TargetFilePath = destLocal,
-                                State = _jobStates[job.Name].State,
-                                TotalFilesToCopy = totalFiles,
-                                TotalFilesSize = totalSize,
-                                NbFilesLeftToDo = totalFiles - currentFilesCopied,
-                                Progression = progress
-                            });
-                            
-                            Console.WriteLine($"Progress: {progress:P2} ({currentBytesCopied}/{totalSize} bytes, {currentFilesCopied}/{totalFiles} files)");
-                        });
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Console.WriteLine($"File copy cancelled: {srcLocal}");
-                        throw; // Rethrow to propagate cancellation
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error copying file {srcLocal}: {ex.Message}");
-                        throw;
-                    }
-                });
-                
-                copyTasks.Add(copyTask);
-            }
-            
             try
             {
-                // Wait for all copy operations to complete, with support for cancellation
-                await Task.WhenAll(copyTasks);
+                // Clean the paths
+                string cleanedSourceDir = job.SourceDir.Trim('"').Trim();
+                string cleanedTargetDir = job.TargetDir.Trim('"').Trim();
                 
-                // Send final update for 100% completion
-                await _threadPool.EnqueueLoggingTask(async (ct) =>
+                Console.WriteLine($"Processing job: {job.Name}");
+                Console.WriteLine($"Source dir: {cleanedSourceDir}");
+                Console.WriteLine($"Target dir: {cleanedTargetDir}");
+
+                // Check source directory
+                if (!Directory.Exists(cleanedSourceDir))
                 {
-                    Report(new StatusEntry
+                    Console.WriteLine($"Source directory does not exist: {cleanedSourceDir}");
+                    throw new DirectoryNotFoundException($"Le répertoire source '{cleanedSourceDir}' n'existe pas.");
+                }
+
+                // Create target directory if needed
+                if (!Directory.Exists(cleanedTargetDir))
+                {
+                    Console.WriteLine($"Creating target directory: {cleanedTargetDir}");
+                    Directory.CreateDirectory(cleanedTargetDir);
+                }
+
+                // Get files to copy with non-blocking pause check
+                var files = new List<string>();
+                await Task.Run(() =>
+                {
+                    foreach (var file in Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories))
                     {
-                        Name = job.Name,
-                        State = "ACTIVE",
-                        TotalFilesToCopy = totalFiles,
-                        TotalFilesSize = totalSize,
-                        NbFilesLeftToDo = 0,
-                        Progression = 1.0 // 100% complete
-                    });
-                });
+                        cancellationToken.ThrowIfCancellationRequested();
+                        // Non-blocking pause check
+                        if (pauseEvent != null && !pauseEvent.WaitOne(0))
+                        {
+                            Task.Delay(50, cancellationToken).Wait();
+                        }
+                        files.Add(file);
+                    }
+                }, cancellationToken);
                 
-                Console.WriteLine($"Backup job completed successfully: {job.Name} - {bytesCopied} bytes in {filesCopied} files");
+                // Calculate total size with non-blocking pause check
+                long totalSize = 0;
+                await Task.Run(() =>
+                {
+                    foreach (var file in files)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        // Non-blocking pause check
+                        if (pauseEvent != null && !pauseEvent.WaitOne(0))
+                        {
+                            Task.Delay(50, cancellationToken).Wait();
+                        }
+                        totalSize += new FileInfo(file).Length;
+                    }
+                }, cancellationToken);
+
+                long bytesCopied = 0;
+                int totalFiles = files.Count;
+                int filesCopied = 0;
+                
+                Console.WriteLine($"Found {totalFiles} files to copy, total size: {totalSize} bytes");
+
+                // Process files
+                var copyTasks = new List<Task>();
+                foreach (string src in files)
+                {
+                    // Non-blocking pause check
+                    if (pauseEvent != null && !pauseEvent.WaitOne(0))
+                    {
+                        await Task.Delay(50, cancellationToken);
+                        continue;
+                    }
+                    
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    // Skip if package blocker
+                    if (PackageBlocker.IsBlocked(_settings))
+                    {
+                        Console.WriteLine("Backup interrupted: package blocked.");
+                        return;
+                    }
+
+                    string rel = Path.GetRelativePath(cleanedSourceDir, src);
+                    string dest = Path.Combine(cleanedTargetDir, rel);
+                    
+                    // Create directories
+                    await _threadPool.EnqueueLoggingTask(async (ct) => 
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    });
+                    
+                    // Local copies for closure
+                    string srcLocal = src;
+                    string destLocal = dest;
+                    
+                    // Get file size
+                    long fileSize = new FileInfo(srcLocal).Length;
+                    
+                    // Copy file
+                    var copyTask = _threadPool.EnqueueCopyTask(async (ct) =>
+                    {
+                        try
+                        {
+                            // Process cancellation during file copy
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                            }
+                            
+                            // Check for pause before starting copy
+                            pauseEvent.WaitOne();
+                            
+                            Console.WriteLine($"Copying: {srcLocal} -> {destLocal}");
+
+                            var swCopy = System.Diagnostics.Stopwatch.StartNew();
+                            await CopyFileWithPauseAndCancellationSupportAsync(srcLocal, destLocal, pauseEvent, cancellationToken);
+                            swCopy.Stop();
+                            
+                            Console.WriteLine($"Copy completed in {swCopy.ElapsedMilliseconds}ms");
+
+                            // Process file encryption if needed
+                            int encMs = 0;
+                            if (_settings.CryptoExtensions.Contains(Path.GetExtension(srcLocal).ToLower()))
+                            {
+                                // Check for cancellation before encryption
+                                cancellationToken.ThrowIfCancellationRequested();
+                                
+                                // Check for pause before encryption
+                                pauseEvent.WaitOne();
+                                
+                                Console.WriteLine($"Encrypting file: {destLocal}");
+                                encMs = CryptoSoftHelper.Encrypt(destLocal, _settings);
+                                Console.WriteLine($"Encryption completed in {encMs}ms");
+                            }
+
+                            // Log the event
+                            await _threadPool.EnqueueLoggingTask(async (logCt) =>
+                            {
+                                _logger.LogEvent(new LogEntry
+                                {
+                                    Timestamp = DateTime.UtcNow,
+                                    JobName = job.Name,
+                                    SourcePath = srcLocal,
+                                    DestPath = destLocal,
+                                    FileSize = fileSize,
+                                    TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
+                                    EncryptionTimeMs = encMs
+                                });
+                            });
+
+                            // Update progress
+                            long currentBytesCopied = Interlocked.Add(ref bytesCopied, fileSize);
+                            int currentFilesCopied = Interlocked.Increment(ref filesCopied);
+                            
+                            // Calculate progress
+                            double progress = (double)currentBytesCopied / totalSize;
+                            
+                            // Report status
+                            await _threadPool.EnqueueLoggingTask(async (logCt) =>
+                            {
+                                Report(new StatusEntry
+                                {
+                                    Name = job.Name,
+                                    SourceFilePath = srcLocal,
+                                    TargetFilePath = destLocal,
+                                    State = _jobStates[job.Name].State,
+                                    TotalFilesToCopy = totalFiles,
+                                    TotalFilesSize = totalSize,
+                                    NbFilesLeftToDo = totalFiles - currentFilesCopied,
+                                    Progression = progress
+                                });
+                                
+                                Console.WriteLine($"Progress: {progress:P2} ({currentBytesCopied}/{totalSize} bytes, {currentFilesCopied}/{totalFiles} files)");
+                            });
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            Console.WriteLine($"File copy cancelled: {srcLocal}");
+                            throw; // Rethrow to propagate cancellation
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error copying file {srcLocal}: {ex.Message}");
+                            throw;
+                        }
+                    });
+                    
+                    copyTasks.Add(copyTask);
+                }
+                
+                try
+                {
+                    // Wait for all copy operations to complete, with support for cancellation
+                    await Task.WhenAll(copyTasks);
+                    
+                    // Send final update for 100% completion
+                    await _threadPool.EnqueueLoggingTask(async (ct) =>
+                    {
+                        Report(new StatusEntry
+                        {
+                            Name = job.Name,
+                            State = "ACTIVE",
+                            TotalFilesToCopy = totalFiles,
+                            TotalFilesSize = totalSize,
+                            NbFilesLeftToDo = 0,
+                            Progression = 1.0 // 100% complete
+                        });
+                    });
+                    
+                    Console.WriteLine($"Backup job completed successfully: {job.Name} - {bytesCopied} bytes in {filesCopied} files");
+                }
+                catch (OperationCanceledException)
+                {
+                    Console.WriteLine($"Backup job was cancelled: {job.Name}");
+                    throw; // Rethrow to let calling code handle cancellation
+                }
             }
             catch (OperationCanceledException)
             {
@@ -483,24 +567,57 @@ namespace Projet.Service
         // Helper method to copy files with pause and cancellation support
         private async Task CopyFileWithPauseAndCancellationSupportAsync(string source, string destination, ManualResetEvent pauseEvent, CancellationToken cancellationToken)
         {
-            const int bufferSize = 81920;
+            const int bufferSize = 32768; // Reduced buffer size for better memory management
             
-            using (var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, true))
-            using (var destStream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, true))
+            try
             {
-                var buffer = new byte[bufferSize];
-                int bytesRead;
-                
-                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                using (var sourceStream = new FileStream(
+                    source, 
+                    FileMode.Open, 
+                    FileAccess.Read, 
+                    FileShare.Read, 
+                    bufferSize, 
+                    FileOptions.Asynchronous | FileOptions.SequentialScan))
+                using (var destStream = new FileStream(
+                    destination, 
+                    FileMode.Create, 
+                    FileAccess.Write, 
+                    FileShare.None, 
+                    bufferSize, 
+                    FileOptions.Asynchronous | FileOptions.SequentialScan))
                 {
-                    // Check if operation is paused
-                    pauseEvent.WaitOne();
+                    var buffer = new byte[bufferSize];
+                    int bytesRead;
                     
-                    // Check if operation is cancelled
-                    cancellationToken.ThrowIfCancellationRequested();
-                    
-                    await destStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                    while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                    {
+                        try
+                        {
+                            // Non-blocking pause check
+                            while (pauseEvent != null && !pauseEvent.WaitOne(0))
+                            {
+                                await Task.Delay(50, cancellationToken);
+                                cancellationToken.ThrowIfCancellationRequested();
+                            }
+                            
+                            await destStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error during file copy: {ex.Message}");
+                            throw;
+                        }
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CopyFileWithPauseAndCancellationSupportAsync: {ex.Message}");
+                throw;
             }
         }
 

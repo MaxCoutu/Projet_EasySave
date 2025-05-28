@@ -242,7 +242,7 @@ namespace Projet.ViewModel
             });
 
             // Add pause/resume command - SIMPLIFIED
-            PauseResumeJobCommand = new Infrastructure.RelayCommand(param =>
+            PauseResumeJobCommand = new Infrastructure.RelayCommand(async param =>
             {
                 if (param is BackupJob job)
                 {
@@ -250,25 +250,39 @@ namespace Projet.ViewModel
                     var jobName = job.Name;
                     Console.WriteLine($"[SIMPLE] Pause/Resume triggered for job: {jobName}");
                     
-                    // Check if job is paused to determine whether to pause or resume
-                    if (job.State == "PAUSED")
+                    // Run the pause/resume operation on a background thread
+                    await Task.Run(() => 
                     {
-                        // Resume this specific job
-                        Console.WriteLine($"[SIMPLE] Resuming job: {jobName}");
-                        job.State = "ACTIVE";
-                        _svc.ResumeJob(jobName);
-                    }
-                    else
-                    {
-                        // Pause this specific job
-                        Console.WriteLine($"[SIMPLE] Pausing job: {jobName}");
-                        job.State = "PAUSED";
-                        _svc.PauseJob(jobName);
-                    }
+                        try
+                        {
+                            // Check if job is paused to determine whether to pause or resume
+                            if (job.State == "PAUSED")
+                            {
+                                // Resume this specific job
+                                Console.WriteLine($"[SIMPLE] Resuming job: {jobName}");
+                                job.State = "ACTIVE";
+                                _svc.ResumeJob(jobName);
+                            }
+                            else
+                            {
+                                // Pause this specific job
+                                Console.WriteLine($"[SIMPLE] Pausing job: {jobName}");
+                                job.State = "PAUSED";
+                                _svc.PauseJob(jobName);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error in pause/resume operation: {ex.Message}");
+                        }
+                    });
                     
-                    // Simply notify UI of the change
-                    OnPropertyChanged(nameof(Jobs));
-                    OnPropertyChanged(nameof(RecentJobs));
+                    // Update UI using the ThreadPool GUI task
+                    await _threadPool.EnqueueGuiTask(async (ct) =>
+                    {
+                        OnPropertyChanged(nameof(Jobs));
+                        OnPropertyChanged(nameof(RecentJobs));
+                    });
                 }
             }, param => param is BackupJob job && (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING"));
 
@@ -469,39 +483,39 @@ namespace Projet.ViewModel
             }
         }
 
-            private void CancelBackup()
-    {
-        _svc.CancelAllBackups();
-        
-        // Update UI
-        foreach (var job in Jobs)
+        private void CancelBackup()
         {
-            if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+            _svc.CancelAllBackups();
+            
+            // Update UI
+            foreach (var job in Jobs)
             {
-                // Use END state instead of CANCELLED to ensure play button visibility
-                job.State = "END";
+                if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+                {
+                    // Use END state instead of CANCELLED to ensure play button visibility
+                    job.State = "END";
+                }
             }
-        }
-        
-        // Update RecentJobs as well
-        foreach (var job in RecentJobs)
-        {
-            if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+            
+            // Update RecentJobs as well
+            foreach (var job in RecentJobs)
             {
-                // Use END state instead of CANCELLED to ensure play button visibility
-                job.State = "END";
+                if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+                {
+                    // Use END state instead of CANCELLED to ensure play button visibility
+                    job.State = "END";
+                }
             }
+            
+            // Notify UI of the changes
+            OnPropertyChanged(nameof(Jobs));
+            OnPropertyChanged(nameof(RecentJobs));
+            
+            IsBackupRunning = false;
+            
+            // Force an immediate refresh to update button visibility
+            ForceRefreshJobs();
         }
-        
-        // Notify UI of the changes
-        OnPropertyChanged(nameof(Jobs));
-        OnPropertyChanged(nameof(RecentJobs));
-        
-        IsBackupRunning = false;
-        
-        // Force an immediate refresh to update button visibility
-        ForceRefreshJobs();
-    }
 
         public void RefreshJobs()
         {

@@ -29,14 +29,27 @@ namespace Projet.Model
         /// <param name="progressCallback">Callback that receives bytes copied so far and whether copy is complete</param>
         protected static async Task CopyFileWithProgressAsync(string src, string dst, Action<long, bool> progressCallback)
         {
-            const int bufferSize = 81920;
+            // Reduced buffer size for better memory usage on low-end machines
+            const int bufferSize = 32768; // 32KB instead of 80KB
             long totalBytesCopied = 0;
             
             // Create the directory if it doesn't exist
             Directory.CreateDirectory(Path.GetDirectoryName(dst) ?? ".");
             
-            using (var sourceStream = new FileStream(src, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, true))
-            using (var destStream = new FileStream(dst, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, true))
+            using (var sourceStream = new FileStream(
+                src, 
+                FileMode.Open, 
+                FileAccess.Read, 
+                FileShare.Read, 
+                bufferSize, 
+                FileOptions.Asynchronous | FileOptions.SequentialScan))
+            using (var destStream = new FileStream(
+                dst, 
+                FileMode.Create, 
+                FileAccess.Write, 
+                FileShare.None, 
+                bufferSize, 
+                FileOptions.Asynchronous | FileOptions.SequentialScan))
             {
                 var buffer = new byte[bufferSize];
                 int bytesRead;
@@ -46,8 +59,11 @@ namespace Projet.Model
                     await destStream.WriteAsync(buffer, 0, bytesRead);
                     totalBytesCopied += bytesRead;
                     
-                    // Report progress during copy
-                    progressCallback?.Invoke(totalBytesCopied, false);
+                    // Report progress less frequently to reduce overhead
+                    if (totalBytesCopied % (bufferSize * 16) == 0)
+                    {
+                        progressCallback?.Invoke(totalBytesCopied, false);
+                    }
                 }
             }
             

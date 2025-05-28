@@ -39,9 +39,9 @@ namespace Projet.Infrastructure
 
         private ThreadPoolManager()
         {
-            // Calculate the number of CPU cores to use (50% of total)
+            
             int totalCores = Environment.ProcessorCount;
-            int coresToUse = Math.Max(1, totalCores / 2);
+            int coresToUse = Math.Max(1, totalCores / 3);
 
             // Allocate threads for each category based on percentages
             _maxConcurrentCopyTasks = Math.Max(1, (coresToUse * CopyTasksPercent) / 100);

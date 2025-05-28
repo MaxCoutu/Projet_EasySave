@@ -128,9 +128,9 @@ namespace Projet.Wpf.View
         // Helper method to schedule multiple refreshes with increasing delays
         private void ScheduleMultipleRefreshes()
         {
-            // First refresh after 50ms
+            // First refresh after 200ms
             var timer1 = new DispatcherTimer();
-            timer1.Interval = TimeSpan.FromMilliseconds(50);
+            timer1.Interval = TimeSpan.FromMilliseconds(200);
             timer1.Tick += (s, args) => {
                 Console.WriteLine("[CRITICAL] Performing first post-control refresh");
                 _vm.ForceRefreshJobs();
@@ -138,9 +138,9 @@ namespace Projet.Wpf.View
             };
             timer1.Start();
             
-            // Second refresh after 150ms
+            // Second refresh after 500ms
             var timer2 = new DispatcherTimer();
-            timer2.Interval = TimeSpan.FromMilliseconds(150);
+            timer2.Interval = TimeSpan.FromMilliseconds(500);
             timer2.Tick += (s, args) => {
                 Console.WriteLine("[CRITICAL] Performing second post-control refresh");
                 _vm.ForceRefreshJobs();
@@ -148,9 +148,9 @@ namespace Projet.Wpf.View
             };
             timer2.Start();
             
-            // Third refresh after 300ms to ensure everything is settled
+            // Third refresh after 1000ms to ensure everything is settled
             var timer3 = new DispatcherTimer();
-            timer3.Interval = TimeSpan.FromMilliseconds(300);
+            timer3.Interval = TimeSpan.FromMilliseconds(1000);
             timer3.Tick += (s, args) => {
                 Console.WriteLine("[CRITICAL] Performing final post-control refresh");
                 _vm.ForceRefreshJobs();
