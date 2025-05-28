@@ -67,7 +67,8 @@ namespace Projet.Wpf.View
         {
             if (value is string state)
             {
-                if (state == "ACTIVE" || state == "PENDING")
+                // Visible pour les états ACTIVE, PENDING et PAUSED
+                if (state == "ACTIVE" || state == "PENDING" || state == "PAUSED")
                 {
                     return Visibility.Visible;
                 }
@@ -82,7 +83,9 @@ namespace Projet.Wpf.View
         {
             if (value is BackupJob job)
             {
-                if (job.State == "ACTIVE" || job.State == "PENDING" || job.Progression > 0)
+                // Visible pour les états ACTIVE, PENDING, PAUSED ou si la progression est > 0
+                if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED" || 
+                    (job.Progression > 0 && job.State != "END" && job.State != "CANCELLED"))
                 {
                     return Visibility.Visible;
                 }
