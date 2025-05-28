@@ -32,21 +32,48 @@ namespace Projet.ViewModel
             if (job == null || string.IsNullOrEmpty(job.Name))
                 return;
 
+            // Store the current state before updating
+            string previousState = job.State;
+            
+            // Check if we need to preserve this state
+            bool preserveState = previousState == "END" || previousState == "CANCELLED";
+            
+            // Refresh status data
             RefreshStatus();
 
             if (_statusCache.TryGetValue(job.Name, out StatusEntry status))
             {
-                // Transférer les propriétés du StatusEntry vers le BackupJob
-                job.State = status.State;
-                job.Progression = status.Progression;
-                job.TotalFilesToCopy = status.TotalFilesToCopy;
-                job.TotalFilesSize = status.TotalFilesSize;
-                job.NbFilesLeftToDo = status.NbFilesLeftToDo;
+                // If job was manually stopped/cancelled and we want to preserve that state
+                if (preserveState && (status.State == "READY" || string.IsNullOrEmpty(status.State)))
+                {
+                    // Preserve the END state but update other properties
+                    job.Progression = status.Progression;
+                    job.TotalFilesToCopy = status.TotalFilesToCopy;
+                    job.TotalFilesSize = status.TotalFilesSize;
+                    job.NbFilesLeftToDo = status.NbFilesLeftToDo;
+                    
+                    // Log this special case
+                    Console.WriteLine($"Preserving '{previousState}' state for job '{job.Name}' instead of '{status.State}'");
+                }
+                else
+                {
+                    // Transfer all properties from the StatusEntry to the BackupJob
+                    job.State = status.State;
+                    job.Progression = status.Progression;
+                    job.TotalFilesToCopy = status.TotalFilesToCopy;
+                    job.TotalFilesSize = status.TotalFilesSize;
+                    job.NbFilesLeftToDo = status.NbFilesLeftToDo;
+                }
             }
             else
             {
-                // Si aucun statut disponible, mettre les valeurs par défaut
-                job.State = "END";
+                // If no status is available, use default values
+                // But only change state if we're not preserving a special state
+                if (!preserveState)
+                {
+                    job.State = "READY"; // Changed from END to READY to ensure play button appears
+                }
+                
                 job.Progression = 0;
                 job.TotalFilesToCopy = 0;
                 job.TotalFilesSize = 0;

@@ -92,6 +92,8 @@ namespace Projet.ViewModel
         public ICommand OpenSettingsCommand { get; }
         public ICommand ReturnToMainViewCommand { get; }
         public ICommand RefreshJobsCommand { get; }
+        public ICommand PauseResumeJobCommand { get; }
+        public ICommand StopJobCommand { get; }
 
         public event Action AddJobRequested;
         public event Action RemoveJobRequested;
@@ -149,7 +151,35 @@ namespace Projet.ViewModel
             {
                 if (param is BackupJob job && !string.IsNullOrWhiteSpace(job.Name) && !IsBackupRunning)
                 {
-                    await RunJobAsync(job);
+                    // Get the job name for reference
+                    var jobName = job.Name;
+                    Console.WriteLine($"[SIMPLE] Starting job: {jobName}");
+                    
+                    // Immediately set job state to ACTIVE (not PENDING) so controls are available
+                    job.State = "ACTIVE";
+                    job.Progression = 0.01;
+                    
+                    // Notify UI of the change
+                    OnPropertyChanged(nameof(Jobs));
+                    OnPropertyChanged(nameof(RecentJobs));
+                    
+                    // Set backup running flag
+                    IsBackupRunning = true;
+                    
+                    // Start the job
+                    try
+                    {
+                        await _svc.ExecuteBackupAsync(jobName);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error executing job: {ex.Message}");
+                    }
+                    finally
+                    {
+                        // Update job status after completion
+                        UpdateJobsStatus();
+                    }
                 }
             });
 
@@ -166,13 +196,164 @@ namespace Projet.ViewModel
             OpenSettingsCommand = new Infrastructure.RelayCommand(_ => ShowSettingsView());
             ReturnToMainViewCommand = new Infrastructure.RelayCommand(_ => CurrentViewModel = this);
             RefreshJobsCommand = new Infrastructure.RelayCommand(_ => {
-                Console.WriteLine("Manual refresh requested - using direct ForceRefreshJobs method");
-                ForceRefreshJobs();
+                Console.WriteLine("Manual refresh requested - executing immediately");
+                // Use direct call instead of queuing
+                try {
+                    // Get all jobs directly
+                    var allJobs = _svc.GetJobs();
+                    
+                    // Cache current job states
+                    var jobStates = new Dictionary<string, string>();
+                    foreach (var job in RecentJobs)
+                    {
+                        if (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING")
+                        {
+                            jobStates[job.Name] = job.State;
+                        }
+                    }
+                    
+                    // Clear collections
+                    RecentJobs.Clear();
+                    
+                    // Re-add all jobs with preserved states
+                    foreach (var job in allJobs)
+                    {
+                        // Preserve active states
+                        if (jobStates.ContainsKey(job.Name))
+                        {
+                            job.State = jobStates[job.Name];
+                        }
+                        
+                        RecentJobs.Add(job);
+                    }
+                    
+                    // Update status
+                    UpdateJobStatusInternal();
+                    
+                    // Notify
+                    OnPropertyChanged(nameof(RecentJobs));
+                    
+                    // Reset UI immediately
+                    ResetUIState();
+                }
+                catch (Exception ex) {
+                    Console.WriteLine($"Error in manual refresh: {ex.Message}");
+                }
             });
+
+            // Add pause/resume command - SIMPLIFIED
+            PauseResumeJobCommand = new Infrastructure.RelayCommand(param =>
+            {
+                if (param is BackupJob job)
+                {
+                    // Get job name for specific targeting
+                    var jobName = job.Name;
+                    Console.WriteLine($"[SIMPLE] Pause/Resume triggered for job: {jobName}");
+                    
+                    // Check if job is paused to determine whether to pause or resume
+                    if (job.State == "PAUSED")
+                    {
+                        // Resume this specific job
+                        Console.WriteLine($"[SIMPLE] Resuming job: {jobName}");
+                        job.State = "ACTIVE";
+                        _svc.ResumeJob(jobName);
+                    }
+                    else
+                    {
+                        // Pause this specific job
+                        Console.WriteLine($"[SIMPLE] Pausing job: {jobName}");
+                        job.State = "PAUSED";
+                        _svc.PauseJob(jobName);
+                    }
+                    
+                    // Simply notify UI of the change
+                    OnPropertyChanged(nameof(Jobs));
+                    OnPropertyChanged(nameof(RecentJobs));
+                }
+            }, param => param is BackupJob job && (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING"));
+
+            // Add stop command - SIMPLIFIED
+            StopJobCommand = new Infrastructure.RelayCommand(param =>
+            {
+                if (param is BackupJob job)
+                {
+                    // Get job name for specific targeting
+                    var jobName = job.Name;
+                    Console.WriteLine($"[SIMPLE] Stop triggered for job: {jobName}");
+                    
+                    // IMPORTANT: Set job state to END instead of CANCELLED
+                    // This ensures the play button becomes visible again
+                    job.State = "END";
+                    
+                    // Stop this specific job
+                    _svc.StopJob(jobName);
+                    
+                    // Reset the IsBackupRunning flag if no other jobs are running
+                    bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING" || j.State == "PAUSED");
+                    if (!anyActive)
+                    {
+                        IsBackupRunning = false;
+                    }
+                    
+                    // Simply notify UI of the change
+                    OnPropertyChanged(nameof(Jobs));
+                    OnPropertyChanged(nameof(RecentJobs));
+                    
+                    // Force additional UI updates using the ForceRefreshJobs method
+                    ForceRefreshJobs();
+                }
+            }, param => param is BackupJob job && (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING"));
 
             _svc.StatusUpdated += OnStatusUpdated;
 
             CurrentViewModel = this;
+        }
+
+        // Method to completely reset the UI state
+        private void ResetUIState()
+        {
+            // Use the ThreadPool to execute on the UI thread
+            _threadPool.EnqueueGuiTaskPriority(async (ct) => {
+                try
+                {
+                    // Force all UI updates to happen immediately
+                    Console.WriteLine("Resetting UI state");
+                    
+                    // First clear the collections to force a complete UI reset
+                    var tempJobs = new List<BackupJob>(Jobs);
+                    var tempRecentJobs = new List<BackupJob>(RecentJobs);
+                    
+                    // Clear and immediately rebuild collections
+                    Jobs.Clear();
+                    RecentJobs.Clear();
+                    
+                    // Notify that collections have changed
+                    OnPropertyChanged(nameof(Jobs));
+                    OnPropertyChanged(nameof(RecentJobs));
+                    
+                    // Ensure UI thread updates
+                    await Task.Delay(10);
+                    
+                    // Repopulate collections
+                    foreach (var job in tempJobs)
+                    {
+                        Jobs.Add(job);
+                    }
+                    
+                    foreach (var job in tempRecentJobs)
+                    {
+                        RecentJobs.Add(job);
+                    }
+                    
+                    // Final notifications
+                    OnPropertyChanged(nameof(Jobs));
+                    OnPropertyChanged(nameof(RecentJobs));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error resetting UI state: {ex.Message}");
+                }
+            });
         }
 
         private void OnStatusUpdated(StatusEntry status)
@@ -231,20 +412,34 @@ namespace Projet.ViewModel
         {
             if (_selected != null && !string.IsNullOrWhiteSpace(_selected.Name))
             {
+                // Get the job name for reference
+                var jobName = _selected.Name;
+                Console.WriteLine($"[SIMPLE] RunSelectedJobAsync for job: {jobName}");
+                
+                // Set job state directly to ACTIVE
+                _selected.State = "ACTIVE";
+                _selected.Progression = 0.01;
+                
+                // Set backup running flag
                 IsBackupRunning = true;
+                
+                // Notify UI of changes
+                OnPropertyChanged(nameof(Jobs));
+                OnPropertyChanged(nameof(RecentJobs));
+                
                 try
                 {
-                    // Update UI state immediately
-                    _selected.State = "PENDING";
-                    _selected.Progression = 0.01;
-                    
-                    // Execute backup
-                    await _svc.ExecuteBackupAsync(_selected.Name);
+                    // Execute the job
+                    await _svc.ExecuteBackupAsync(jobName);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in RunSelectedJobAsync: {ex.Message}");
                 }
                 finally
                 {
+                    // Update job status
                     UpdateJobsStatus();
-                    // Will be set to false by the StatusUpdated event handler when complete
                 }
             }
         }
@@ -273,41 +468,40 @@ namespace Projet.ViewModel
                 }
             }
         }
-        
-        private async Task RunJobAsync(BackupJob job)
-        {
-            IsBackupRunning = true;
-            try
-            {
-                // Update UI state immediately
-                job.State = "PENDING";
-                job.Progression = 0.01;
-                
-                // Execute backup
-                await _svc.ExecuteBackupAsync(job.Name);
-            }
-            finally
-            {
-                UpdateJobsStatus();
-                // Will be set to false by the StatusUpdated event handler when complete
-            }
-        }
 
-        private void CancelBackup()
+            private void CancelBackup()
+    {
+        _svc.CancelAllBackups();
+        
+        // Update UI
+        foreach (var job in Jobs)
         {
-            _svc.CancelAllBackups();
-            
-            // Update UI
-            foreach (var job in Jobs)
+            if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
             {
-                if (job.State == "ACTIVE" || job.State == "PENDING")
-                {
-                    job.State = "CANCELLED";
-                }
+                // Use END state instead of CANCELLED to ensure play button visibility
+                job.State = "END";
             }
-            
-            IsBackupRunning = false;
         }
+        
+        // Update RecentJobs as well
+        foreach (var job in RecentJobs)
+        {
+            if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+            {
+                // Use END state instead of CANCELLED to ensure play button visibility
+                job.State = "END";
+            }
+        }
+        
+        // Notify UI of the changes
+        OnPropertyChanged(nameof(Jobs));
+        OnPropertyChanged(nameof(RecentJobs));
+        
+        IsBackupRunning = false;
+        
+        // Force an immediate refresh to update button visibility
+        ForceRefreshJobs();
+    }
 
         public void RefreshJobs()
         {
@@ -458,21 +652,52 @@ namespace Projet.ViewModel
         // Public method that can be called from external code to force jobs to display
         public void ForceRefreshJobs()
         {
-            Console.WriteLine("Force refresh called from external code");
+            Console.WriteLine("[SIMPLE] Force refresh called");
             
             try {
-                // Get all jobs directly from the service
+                // Get all jobs directly
                 var allJobs = _svc.GetJobs();
-                Console.WriteLine($"ForceRefreshJobs found {allJobs.Count} jobs");
                 
-                // Clear and immediately rebuild the RecentJobs collection
+                // Create dictionary of current jobs with their states
+                var currentJobStates = new Dictionary<string, string>();
+                foreach (var job in RecentJobs)
+                {
+                    // Store all states we want to preserve
+                    // IMPORTANT: We specifically want to preserve END state to keep play button visible
+                    if (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING" || 
+                        job.State == "END" || job.State == "CANCELLED")
+                    {
+                        currentJobStates[job.Name] = job.State;
+                        Console.WriteLine($"Preserving state '{job.State}' for job '{job.Name}'");
+                    }
+                }
+                
+                // Clear and rebuild the RecentJobs collection
                 RecentJobs.Clear();
                 
-                // Add all jobs directly
+                // Add all jobs directly, preserving important states
                 foreach (var job in allJobs)
                 {
+                    // If job was already in the collection, preserve its state
+                    if (currentJobStates.ContainsKey(job.Name))
+                    {
+                        // Preserve job state including END state
+                        job.State = currentJobStates[job.Name];
+                        Console.WriteLine($"Setting preserved state '{job.State}' for job '{job.Name}'");
+                    }
+                    else
+                    {
+                        // For jobs that don't have a preserved state, make sure they're in READY state
+                        // so the play button will be visible
+                        if (string.IsNullOrEmpty(job.State) || job.State == "CANCELLED")
+                        {
+                            job.State = "READY";
+                            Console.WriteLine($"Setting default READY state for job '{job.Name}'");
+                        }
+                    }
+                    
+                    // Add the job to the collection
                     RecentJobs.Add(job);
-                    Console.WriteLine($"ForceRefreshJobs added: {job.Name}");
                 }
                 
                 // Update job status immediately
@@ -480,9 +705,78 @@ namespace Projet.ViewModel
                 
                 // Notify UI
                 OnPropertyChanged(nameof(RecentJobs));
+                
+                // Check if we need to update IsBackupRunning flag
+                bool anyActive = RecentJobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING" || j.State == "PAUSED");
+                if (!anyActive && IsBackupRunning)
+                {
+                    Console.WriteLine("No active jobs - resetting IsBackupRunning flag");
+                    IsBackupRunning = false;
+                }
             }
             catch (Exception ex) {
                 Console.WriteLine($"Error in ForceRefreshJobs: {ex.Message}");
+            }
+        }
+
+        // Helper method to clear UI focus - simplified to avoid WPF dependencies
+        private void ClearFocus()
+        {
+            // Use the ThreadPool to execute on the UI thread
+            _threadPool.EnqueueGuiTask(async (ct) => {
+                try
+                {
+                    // Just log the intent for now
+                    Console.WriteLine("Clearing focus");
+                    
+                    // Note: We can't directly clear focus here because this is in the core library
+                    // The WPF app will handle this via the FocusBehavior attached property
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error clearing focus: {ex.Message}");
+                }
+            });
+        }
+
+        // Helper method to refresh jobs while preserving specified states
+        private void RefreshJobsWithPreservedStates(Dictionary<string, string> jobStates)
+        {
+            try
+            {
+                // Get all jobs directly
+                var allJobs = _svc.GetJobs();
+                
+                // Clear collections
+                RecentJobs.Clear();
+                
+                // Re-add all jobs with preserved states
+                foreach (var refreshedJob in allJobs)
+                {
+                    // Preserve active states
+                    if (jobStates.ContainsKey(refreshedJob.Name))
+                    {
+                        refreshedJob.State = jobStates[refreshedJob.Name];
+                    }
+                    
+                    RecentJobs.Add(refreshedJob);
+                }
+                
+                // Update status
+                UpdateJobStatusInternal();
+                
+                // Notify UI
+                OnPropertyChanged(nameof(RecentJobs));
+                
+                // Reset UI state
+                ResetUIState();
+                
+                // Clear focus
+                ClearFocus();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in RefreshJobsWithPreservedStates: {ex.Message}");
             }
         }
 

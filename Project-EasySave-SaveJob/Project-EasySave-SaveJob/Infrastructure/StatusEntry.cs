@@ -14,6 +14,7 @@ namespace Projet.Infrastructure
         public long TotalFilesSize { get; set; }
         public int NbFilesLeftToDo { get; set; }
         public double Progression { get; set; }        
+        public string ErrorMessage { get; set; } = "";
 
         public StatusEntry() { }   
 
@@ -28,6 +29,13 @@ namespace Projet.Infrastructure
             TotalFilesSize = totalSize;
             NbFilesLeftToDo = left;
             Progression = progression;
+        }
+        
+        public StatusEntry(string name, string src, string dst, string state,
+                           int totalFiles, long totalSize, int left, double progression,
+                           string errorMessage) : this(name, src, dst, state, totalFiles, totalSize, left, progression)
+        {
+            ErrorMessage = errorMessage;
         }
     }
 }

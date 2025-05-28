@@ -78,7 +78,8 @@ namespace Projet.Model
             Console.WriteLine($"Full Backup completed: {filesCopied} files, {bytesCopied} bytes transferred");
         }
 
-        private async Task CopyFileWithProgressAsync(string src, string dest, Action<long, bool> progressCallback)
+        // Use 'new' keyword to indicate this method intentionally hides the base class method
+        new private async Task CopyFileWithProgressAsync(string src, string dest, Action<long, bool> progressCallback)
         {
             const int bufferSize = 81920;
             long totalBytesCopied = 0;

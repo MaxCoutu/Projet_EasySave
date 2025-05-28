@@ -19,6 +19,26 @@ namespace Projet.Service
         private readonly List<BackupJob> _jobs;
         private readonly ThreadPoolManager _threadPool;
         private CancellationTokenSource _cancellationTokenSource;
+        
+        // Dictionary to track individual job states and cancellation tokens
+        private readonly Dictionary<string, JobStateInfo> _jobStates = new Dictionary<string, JobStateInfo>();
+
+        // Class to track job state information
+        private class JobStateInfo
+        {
+            public CancellationTokenSource CancellationTokenSource { get; set; }
+            public bool IsPaused { get; set; }
+            public string State { get; set; }
+            public ManualResetEvent PauseEvent { get; set; }
+
+            public JobStateInfo()
+            {
+                CancellationTokenSource = new CancellationTokenSource();
+                IsPaused = false;
+                State = "READY";
+                PauseEvent = new ManualResetEvent(true); // Initially not paused (signaled)
+            }
+        }
 
         public BackupService(ILogger logger, IJobRepository repo, Settings settings)
         {
@@ -28,6 +48,12 @@ namespace Projet.Service
             _jobs = new List<BackupJob>(_repo.Load());
             _threadPool = ThreadPoolManager.Instance;
             _cancellationTokenSource = new CancellationTokenSource();
+            
+            // Initialize job states for all jobs
+            foreach (var job in _jobs)
+            {
+                _jobStates[job.Name] = new JobStateInfo();
+            }
             
             // Start the thread pool manager
             _threadPool.Start();
@@ -43,6 +69,10 @@ namespace Projet.Service
         public void AddJob(BackupJob job)
         {
             _jobs.Add(job);
+            
+            // Initialize job state
+            _jobStates[job.Name] = new JobStateInfo();
+            
             // Use the logging thread pool for saving job data
             _threadPool.EnqueueLoggingTask(async (ct) => 
             {
@@ -53,7 +83,15 @@ namespace Projet.Service
 
         public void RemoveJob(string name)
         {
+            // Cancel any running task for this job
+            if (_jobStates.ContainsKey(name))
+            {
+                _jobStates[name].CancellationTokenSource.Cancel();
+                _jobStates.Remove(name);
+            }
+            
             _jobs.RemoveAll(j => j.Name == name);
+            
             // Use the logging thread pool for saving job data
             _threadPool.EnqueueLoggingTask(async (ct) => 
             {
@@ -80,6 +118,17 @@ namespace Projet.Service
                 return;
             }
 
+            // Reset job state if it was stopped or completed
+            if (!_jobStates.ContainsKey(name) || 
+                _jobStates[name].State == "END" || 
+                _jobStates[name].State == "CANCELLED")
+            {
+                _jobStates[name] = new JobStateInfo();
+            }
+            
+            // Set job to pending
+            _jobStates[name].State = "PENDING";
+            
             // Use logging thread for status updates
             await _threadPool.EnqueueLoggingTask(async (ct) => 
             {
@@ -90,16 +139,49 @@ namespace Projet.Service
             {
                 await ProcessJobAsync(job);
             }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine($"Job '{job.Name}' was cancelled.");
+                
+                // Use logging thread for status updates
+                await _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Report(new StatusEntry { Name = job.Name, State = "CANCELLED" });
+                });
+                
+                // Update job state
+                _jobStates[job.Name].State = "CANCELLED";
+            }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erreur lors de l'exécution du backup '{job.Name}' : {ex.Message}");
+                Console.WriteLine($"Error executing backup '{job.Name}': {ex.Message}");
+                
+                // Update job state
+                _jobStates[job.Name].State = "ERROR";
+                
+                // Report error
+                await _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Report(new StatusEntry { 
+                        Name = job.Name, 
+                        State = "ERROR",
+                        ErrorMessage = ex.Message
+                    });
+                });
             }
 
-            // Use logging thread for status updates
-            await _threadPool.EnqueueLoggingTask(async (ct) => 
+            // If the job completed successfully (not cancelled or error)
+            if (_jobStates.ContainsKey(name) && _jobStates[name].State != "CANCELLED" && _jobStates[name].State != "ERROR")
             {
-                Report(new StatusEntry { Name = job.Name, State = "END" });
-            });
+                // Use logging thread for status updates
+                await _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Report(new StatusEntry { Name = job.Name, State = "END" });
+                });
+                
+                // Update job state
+                _jobStates[job.Name].State = "END";
+            }
         }
 
         public async Task ExecuteAllBackupsAsync()
@@ -119,10 +201,100 @@ namespace Projet.Service
             
             await Task.WhenAll(tasks);
         }
+        
+        // New methods for job control
+        
+        public void PauseJob(string name)
+        {
+            Console.WriteLine($"Pausing job: {name}");
+            
+            if (_jobStates.ContainsKey(name) && !_jobStates[name].IsPaused)
+            {
+                _jobStates[name].IsPaused = true;
+                _jobStates[name].PauseEvent.Reset(); // Block threads waiting on this event
+                _jobStates[name].State = "PAUSED";
+                
+                // Report the paused state
+                _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Report(new StatusEntry { 
+                        Name = name, 
+                        State = "PAUSED" 
+                    });
+                });
+            }
+        }
+        
+        public void ResumeJob(string name)
+        {
+            Console.WriteLine($"Resuming job: {name}");
+            
+            if (_jobStates.ContainsKey(name) && _jobStates[name].IsPaused)
+            {
+                _jobStates[name].IsPaused = false;
+                _jobStates[name].PauseEvent.Set(); // Unblock threads waiting on this event
+                _jobStates[name].State = "ACTIVE";
+                
+                // Report the resumed state
+                _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Report(new StatusEntry { 
+                        Name = name, 
+                        State = "ACTIVE" 
+                    });
+                });
+            }
+        }
+        
+        public void StopJob(string name)
+        {
+            Console.WriteLine($"Stopping job: {name}");
+            
+            if (_jobStates.ContainsKey(name))
+            {
+                // Cancel the job's token
+                _jobStates[name].CancellationTokenSource.Cancel();
+                
+                // If it's paused, unpause it so it can process the cancellation
+                if (_jobStates[name].IsPaused)
+                {
+                    _jobStates[name].IsPaused = false;
+                    _jobStates[name].PauseEvent.Set();
+                }
+                
+                _jobStates[name].State = "CANCELLED";
+                
+                // Report the cancelled state
+                _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Report(new StatusEntry { 
+                        Name = name, 
+                        State = "CANCELLED" 
+                    });
+                });
+            }
+        }
 
         private async Task ProcessJobAsync(BackupJob job)
         {
-            // Nettoyer les chemins
+            // Check if job state exists, create if not
+            if (!_jobStates.ContainsKey(job.Name))
+            {
+                _jobStates[job.Name] = new JobStateInfo();
+            }
+            
+            // Get the job's cancellation token
+            var cancellationToken = _jobStates[job.Name].CancellationTokenSource.Token;
+            
+            // Get the job's pause event
+            var pauseEvent = _jobStates[job.Name].PauseEvent;
+            
+            // Update job state to active
+            _jobStates[job.Name].State = "ACTIVE";
+            
+            // Rest of method continues as before, but with modifications for pause/cancel support...
+            
+            // Clean the paths
             string cleanedSourceDir = job.SourceDir.Trim('"').Trim();
             string cleanedTargetDir = job.TargetDir.Trim('"').Trim();
             
@@ -130,134 +302,162 @@ namespace Projet.Service
             Console.WriteLine($"Source dir: {cleanedSourceDir}");
             Console.WriteLine($"Target dir: {cleanedTargetDir}");
 
-            // Vérifier l'existence du répertoire source
+            // Check source directory
             if (!Directory.Exists(cleanedSourceDir))
             {
                 Console.WriteLine($"Source directory does not exist: {cleanedSourceDir}");
                 throw new DirectoryNotFoundException($"Le répertoire source '{cleanedSourceDir}' n'existe pas.");
             }
 
-            // Créer le répertoire cible s'il n'existe pas
+            // Create target directory if needed
             if (!Directory.Exists(cleanedTargetDir))
             {
                 Console.WriteLine($"Creating target directory: {cleanedTargetDir}");
                 Directory.CreateDirectory(cleanedTargetDir);
             }
 
+            // Get files to copy
+            var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
+            
+            // Calculate total size
+            long totalSize = files.Sum(f => new FileInfo(f).Length);
+            long bytesCopied = 0;
+            int totalFiles = files.Count;
+            int filesCopied = 0;
+            
+            Console.WriteLine($"Found {totalFiles} files to copy, total size: {totalSize} bytes");
+
+            // Process files
+            var copyTasks = new List<Task>();
+            foreach (string src in files)
+            {
+                // Check for cancellation
+                cancellationToken.ThrowIfCancellationRequested();
+                
+                // Check for pause
+                pauseEvent.WaitOne();
+                
+                // Skip if package blocker
+                if (PackageBlocker.IsBlocked(_settings))
+                {
+                    Console.WriteLine("Backup interrupted: package blocked.");
+                    return;
+                }
+
+                string rel = Path.GetRelativePath(cleanedSourceDir, src);
+                string dest = Path.Combine(cleanedTargetDir, rel);
+                
+                // Create directories
+                await _threadPool.EnqueueLoggingTask(async (ct) => 
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                });
+                
+                // Local copies for closure
+                string srcLocal = src;
+                string destLocal = dest;
+                
+                // Get file size
+                long fileSize = new FileInfo(srcLocal).Length;
+                
+                // Copy file
+                var copyTask = _threadPool.EnqueueCopyTask(async (ct) =>
+                {
+                    try
+                    {
+                        // Process cancellation during file copy
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
+                        
+                        // Check for pause before starting copy
+                        pauseEvent.WaitOne();
+                        
+                        Console.WriteLine($"Copying: {srcLocal} -> {destLocal}");
+
+                        var swCopy = System.Diagnostics.Stopwatch.StartNew();
+                        await CopyFileWithPauseAndCancellationSupportAsync(srcLocal, destLocal, pauseEvent, cancellationToken);
+                        swCopy.Stop();
+                        
+                        Console.WriteLine($"Copy completed in {swCopy.ElapsedMilliseconds}ms");
+
+                        // Process file encryption if needed
+                        int encMs = 0;
+                        if (_settings.CryptoExtensions.Contains(Path.GetExtension(srcLocal).ToLower()))
+                        {
+                            // Check for cancellation before encryption
+                            cancellationToken.ThrowIfCancellationRequested();
+                            
+                            // Check for pause before encryption
+                            pauseEvent.WaitOne();
+                            
+                            Console.WriteLine($"Encrypting file: {destLocal}");
+                            encMs = CryptoSoftHelper.Encrypt(destLocal, _settings);
+                            Console.WriteLine($"Encryption completed in {encMs}ms");
+                        }
+
+                        // Log the event
+                        await _threadPool.EnqueueLoggingTask(async (logCt) =>
+                        {
+                            _logger.LogEvent(new LogEntry
+                            {
+                                Timestamp = DateTime.UtcNow,
+                                JobName = job.Name,
+                                SourcePath = srcLocal,
+                                DestPath = destLocal,
+                                FileSize = fileSize,
+                                TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
+                                EncryptionTimeMs = encMs
+                            });
+                        });
+
+                        // Update progress
+                        long currentBytesCopied = Interlocked.Add(ref bytesCopied, fileSize);
+                        int currentFilesCopied = Interlocked.Increment(ref filesCopied);
+                        
+                        // Calculate progress
+                        double progress = (double)currentBytesCopied / totalSize;
+                        
+                        // Report status
+                        await _threadPool.EnqueueLoggingTask(async (logCt) =>
+                        {
+                            Report(new StatusEntry
+                            {
+                                Name = job.Name,
+                                SourceFilePath = srcLocal,
+                                TargetFilePath = destLocal,
+                                State = _jobStates[job.Name].State,
+                                TotalFilesToCopy = totalFiles,
+                                TotalFilesSize = totalSize,
+                                NbFilesLeftToDo = totalFiles - currentFilesCopied,
+                                Progression = progress
+                            });
+                            
+                            Console.WriteLine($"Progress: {progress:P2} ({currentBytesCopied}/{totalSize} bytes, {currentFilesCopied}/{totalFiles} files)");
+                        });
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Console.WriteLine($"File copy cancelled: {srcLocal}");
+                        throw; // Rethrow to propagate cancellation
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error copying file {srcLocal}: {ex.Message}");
+                        throw;
+                    }
+                });
+                
+                copyTasks.Add(copyTask);
+            }
+            
             try
             {
-                var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
-                
-                // Calculate total size for better progress tracking
-                long totalSize = files.Sum(f => new FileInfo(f).Length);
-                long bytesCopied = 0;
-                int totalFiles = files.Count;
-                int filesCopied = 0;
-                
-                Console.WriteLine($"Found {totalFiles} files to copy, total size: {totalSize} bytes");
-
-                // Process files in parallel with controlled concurrency
-                var copyTasks = new List<Task>();
-                foreach (string src in files)
-                {
-                    // Skip if job should be cancelled
-                    if (PackageBlocker.IsBlocked(_settings) || _cancellationTokenSource.Token.IsCancellationRequested)
-                    {
-                        Console.WriteLine("Backup interrompu : package bloqué ou annulé.");
-                        return;
-                    }
-
-                    string rel = Path.GetRelativePath(cleanedSourceDir, src);
-                    string dest = Path.Combine(cleanedTargetDir, rel);
-                    
-                    // Create directories on the logging thread (less resource-intensive)
-                    await _threadPool.EnqueueLoggingTask(async (ct) => 
-                    {
-                        Directory.CreateDirectory(Path.GetDirectoryName(dest));
-                    });
-                    
-                    // Use a local copy for the closure
-                    string srcLocal = src;
-                    string destLocal = dest;
-                    
-                    // Get file size before copying
-                    long fileSize = new FileInfo(srcLocal).Length;
-                    
-                    var copyTask = _threadPool.EnqueueCopyTask(async (ct) =>
-                    {
-                        try
-                        {
-                            Console.WriteLine($"Copying: {srcLocal} -> {destLocal}");
-
-                            var swCopy = System.Diagnostics.Stopwatch.StartNew();
-                            File.Copy(srcLocal, destLocal, true);
-                            swCopy.Stop();
-                            
-                            Console.WriteLine($"Copy completed in {swCopy.ElapsedMilliseconds}ms");
-
-                            int encMs = 0;
-                            if (_settings.CryptoExtensions.Contains(Path.GetExtension(srcLocal).ToLower()))
-                            {
-                                Console.WriteLine($"Encrypting file: {destLocal}");
-                                encMs = CryptoSoftHelper.Encrypt(destLocal, _settings);
-                                Console.WriteLine($"Encryption completed in {encMs}ms");
-                            }
-
-                            // Log the event on the logging thread
-                            await _threadPool.EnqueueLoggingTask(async (logCt) =>
-                            {
-                                _logger.LogEvent(new LogEntry
-                                {
-                                    Timestamp = DateTime.UtcNow,
-                                    JobName = job.Name,
-                                    SourcePath = srcLocal,
-                                    DestPath = destLocal,
-                                    FileSize = fileSize,
-                                    TransferTimeMs = (int)swCopy.ElapsedMilliseconds,
-                                    EncryptionTimeMs = encMs
-                                });
-                            });
-
-                            // Update progress based on bytes copied rather than files
-                            long currentBytesCopied = Interlocked.Add(ref bytesCopied, fileSize);
-                            int currentFilesCopied = Interlocked.Increment(ref filesCopied);
-                            
-                            // Calculate progress based on bytes, not file count
-                            double progress = (double)currentBytesCopied / totalSize;
-                            
-                            // Update progress and report status on logging thread
-                            await _threadPool.EnqueueLoggingTask(async (logCt) =>
-                            {
-                                Report(new StatusEntry
-                                {
-                                    Name = job.Name,
-                                    SourceFilePath = srcLocal,
-                                    TargetFilePath = destLocal,
-                                    State = "ACTIVE",
-                                    TotalFilesToCopy = totalFiles,
-                                    TotalFilesSize = totalSize,
-                                    NbFilesLeftToDo = totalFiles - currentFilesCopied,
-                                    Progression = progress
-                                });
-                                
-                                Console.WriteLine($"Progress: {progress:P2} ({currentBytesCopied}/{totalSize} bytes, {currentFilesCopied}/{totalFiles} files)");
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Error copying file {srcLocal}: {ex.Message}");
-                            throw;
-                        }
-                    });
-                    
-                    copyTasks.Add(copyTask);
-                }
-                
-                // Wait for all copy operations to complete
+                // Wait for all copy operations to complete, with support for cancellation
                 await Task.WhenAll(copyTasks);
                 
-                // Send one final update to ensure we show 100% completion
-                // This is helpful in case of rounding errors in the progress calculation
+                // Send final update for 100% completion
                 await _threadPool.EnqueueLoggingTask(async (ct) =>
                 {
                     Report(new StatusEntry
@@ -273,40 +473,82 @@ namespace Projet.Service
                 
                 Console.WriteLine($"Backup job completed successfully: {job.Name} - {bytesCopied} bytes in {filesCopied} files");
             }
-            catch (UnauthorizedAccessException ex)
+            catch (OperationCanceledException)
             {
-                Console.WriteLine($"Access denied: {ex.Message}");
-                throw new UnauthorizedAccessException($"Accès refusé au répertoire '{cleanedSourceDir}' : {ex.Message}", ex);
+                Console.WriteLine($"Backup job was cancelled: {job.Name}");
+                throw; // Rethrow to let calling code handle cancellation
             }
-            catch (IOException ex)
+        }
+        
+        // Helper method to copy files with pause and cancellation support
+        private async Task CopyFileWithPauseAndCancellationSupportAsync(string source, string destination, ManualResetEvent pauseEvent, CancellationToken cancellationToken)
+        {
+            const int bufferSize = 81920;
+            
+            using (var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, true))
+            using (var destStream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, true))
             {
-                Console.WriteLine($"I/O error: {ex.Message}");
-                throw new IOException($"Erreur d'E/S dans '{cleanedSourceDir}' : {ex.Message}", ex);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                throw new Exception($"Erreur inattendue dans '{cleanedSourceDir}' : {ex.Message}", ex);
+                var buffer = new byte[bufferSize];
+                int bytesRead;
+                
+                while ((bytesRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                {
+                    // Check if operation is paused
+                    pauseEvent.WaitOne();
+                    
+                    // Check if operation is cancelled
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    await destStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                }
             }
         }
 
         private void Report(StatusEntry s)
         {
+            Console.WriteLine($"Reporting: Job={s.Name}, State={s.State}, Progression={s.Progression:F2}%");
             _logger.UpdateStatus(s);
             StatusUpdated?.Invoke(s);
         }
-        
+
         public void CancelAllBackups()
         {
+            Console.WriteLine("Cancelling all backups");
+            
+            // Cancel the global token
             _cancellationTokenSource.Cancel();
+            
+            // Create a new token for future operations
             _cancellationTokenSource = new CancellationTokenSource();
-            Console.WriteLine("All backup operations have been cancelled");
+            
+            // Also cancel all individual job tokens
+            foreach (var jobState in _jobStates.Values)
+            {
+                jobState.CancellationTokenSource.Cancel();
+                jobState.CancellationTokenSource = new CancellationTokenSource();
+                jobState.State = "CANCELLED";
+                jobState.IsPaused = false;
+                jobState.PauseEvent.Set(); // Ensure it's not stuck in pause
+            }
         }
 
         public void Dispose()
         {
-            _cancellationTokenSource.Cancel();
+            // Cancel all running tasks
+            CancelAllBackups();
+            
+            // Dispose all job state resources
+            foreach (var jobState in _jobStates.Values)
+            {
+                jobState.CancellationTokenSource.Dispose();
+                jobState.PauseEvent.Dispose();
+            }
+            
+            // Dispose other resources
             _cancellationTokenSource.Dispose();
+            _threadPool.Stop(); // Stop the thread pool instead of trying to dispose it
+            
+            GC.SuppressFinalize(this);
         }
     }
 }

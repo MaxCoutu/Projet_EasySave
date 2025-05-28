@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Projet.Infrastructure
 {
@@ -131,6 +132,81 @@ namespace Projet.Infrastructure
                     tcs.TrySetException(ex);
                 }
             });
+            return tcs.Task;
+        }
+
+        /// <summary>
+        /// Enqueues a GUI task with high priority, attempting to execute it immediately
+        /// on the current thread if possible, otherwise queueing it with priority
+        /// </summary>
+        public Task EnqueueGuiTaskPriority(Func<CancellationToken, Task> task)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            
+            // For high priority GUI tasks, try to run immediately if we can acquire the semaphore
+            if (_guiTasksSemaphore.Wait(0))
+            {
+                try
+                {
+                    // Execute the task immediately on the current thread
+                    Task.Run(async () => 
+                    {
+                        try 
+                        {
+                            await task(_cancellationSource.Token);
+                            tcs.TrySetResult(true);
+                        }
+                        catch (Exception ex) 
+                        {
+                            tcs.TrySetException(ex);
+                        }
+                        finally
+                        {
+                            _guiTasksSemaphore.Release();
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _guiTasksSemaphore.Release();
+                    tcs.TrySetException(ex);
+                }
+            }
+            else
+            {
+                // If we can't run immediately, add to the front of the queue
+                Func<CancellationToken, Task> priorityTask = async (cancellationToken) => 
+                {
+                    try 
+                    {
+                        await task(cancellationToken);
+                        tcs.TrySetResult(true);
+                    }
+                    catch (Exception ex) 
+                    {
+                        tcs.TrySetException(ex);
+                    }
+                };
+                
+                // Add to a new queue and then merge with existing queue to prioritize
+                var tempQueue = new ConcurrentQueue<Func<CancellationToken, Task>>();
+                tempQueue.Enqueue(priorityTask);
+                
+                // Drain current tasks to temporary collection
+                var existingTasks = new List<Func<CancellationToken, Task>>();
+                while (_guiTasks.TryDequeue(out var existingTask))
+                {
+                    existingTasks.Add(existingTask);
+                }
+                
+                // Re-add all tasks with priority task first
+                _guiTasks.Enqueue(priorityTask);
+                foreach (var existingTask in existingTasks)
+                {
+                    _guiTasks.Enqueue(existingTask);
+                }
+            }
+            
             return tcs.Task;
         }
 

@@ -11,7 +11,43 @@
 
     <Window.Resources>
         <local:FolderNameConverter x:Key="FolderNameConverter"/>
-        <local:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
+        <local:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter" />
+        <local:JobStateToVisibilityConverter x:Key="JobStateToVisibilityConverter" />
+
+        <!-- Custom Button Style for Control Buttons -->
+        <Style x:Key="ControlButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Width" Value="25"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="ClickMode" Value="Press"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#44FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#88FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <!-- Style for settings icon paths -->
         <Style x:Key="SettingsPathStyle" TargetType="Path">
@@ -240,7 +276,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition/>
-                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="120"/>
                                                 </Grid.ColumnDefinitions>
 
                                                 <StackPanel Grid.Row="0">
@@ -304,18 +340,83 @@
                                                     </TextBlock>
                                                 </Grid>
 
-                                                <Button Grid.Column="1" Grid.Row="0"
-                                                        Width="25" Height="25"
-                                                        Background="Transparent"
-                                                        BorderThickness="0"
-                                                        Cursor="Hand"
-                                                        Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                        CommandParameter="{Binding}"
-                                                        ToolTip="{loc:Loc play_tooltip}">
-                                                    <Path Data="M0,0 L0,20 L18,10 Z"
-                                                          Fill="White"
-                                                          Stretch="Uniform"/>
-                                                </Button>
+                                                <!-- Buttons Container -->
+                                                <Grid Grid.Column="1" Grid.Row="0" x:Name="ButtonsGrid">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <!-- Play Button - Positioned explicitly -->
+                                                    <Border Grid.Column="0" 
+                                                            HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"
+                                                            Width="26" Height="26"
+                                                            x:Name="PlayButtonContainer"
+                                                            Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Play}">
+                                                        <Button Style="{StaticResource ControlButtonStyle}"
+                                                                Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="{loc:Loc play_tooltip}">
+                                                            <Path Data="M0,0 L0,20 L18,10 Z"
+                                                                  Fill="White"
+                                                                  Stretch="Uniform"/>
+                                                        </Button>
+                                                    </Border>
+                                                    
+                                                    <!-- Pause/Resume Button - Positioned explicitly -->
+                                                    <Border Grid.Column="1" 
+                                                            HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"
+                                                            Width="30" Height="30"
+                                                            x:Name="PauseButtonContainer"
+                                                            Background="Transparent"
+                                                            Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=PauseResume}">
+                                                        <Button Style="{StaticResource ControlButtonStyle}"
+                                                                Command="{Binding DataContext.PauseResumeJobCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="Pause/Resume"
+                                                                Tag="{Binding State}"
+                                                                Click="ControlButton_Click">
+                                                            <Path Stroke="White" 
+                                                                  StrokeThickness="2"
+                                                                  Fill="Transparent">
+                                                                <Path.Style>
+                                                                    <Style TargetType="Path">
+                                                                        <Setter Property="Data" Value="M4,2 L4,14 L10,14 L10,2 z M14,2 L14,14 L20,14 L20,2 z" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding State}" Value="PAUSED">
+                                                                                <Setter Property="Data" Value="M8,5 L8,19 L19,12 z" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Path.Style>
+                                                            </Path>
+                                                        </Button>
+                                                    </Border>
+                                                    
+                                                    <!-- Stop Button - Positioned explicitly -->
+                                                    <Border Grid.Column="2" 
+                                                            HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"
+                                                            Width="30" Height="30"
+                                                            Background="Transparent"
+                                                            x:Name="StopButtonContainer"
+                                                            Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Stop}">
+                                                        <Button Style="{StaticResource ControlButtonStyle}"
+                                                                Command="{Binding DataContext.StopJobCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                CommandParameter="{Binding}"
+                                                                ToolTip="Stop"
+                                                                Tag="{Binding State}"
+                                                                Click="ControlButton_Click">
+                                                            <Path Data="M2,2 L22,2 L22,22 L2,22 z"
+                                                                  Stroke="White"
+                                                                  StrokeThickness="2"
+                                                                  Fill="Transparent"/>
+                                                        </Button>
+                                                    </Border>
+                                                </Grid>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
