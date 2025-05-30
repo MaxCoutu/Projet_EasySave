@@ -9,16 +9,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfApp", "..\WpfApp\WpfApp.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "image", "image", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\..\..\..\..\Downloads\bin-svgrepo-com.png = ..\..\..\..\..\..\Downloads\bin-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\chevron-left-circle-svgrepo-com.png = ..\..\..\..\..\..\Downloads\chevron-left-circle-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\flag-gb-svgrepo-com.png = ..\..\..\..\..\..\Downloads\flag-gb-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\flag-wf-svgrepo-com.png = ..\..\..\..\..\..\Downloads\flag-wf-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\multiple-svgrepo-com (1).png = ..\..\..\..\..\..\Downloads\multiple-svgrepo-com (1).png
-		..\..\..\..\..\..\Downloads\pen-field-svgrepo-com.png = ..\..\..\..\..\..\Downloads\pen-field-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\plus-svgrepo-com.png = ..\..\..\..\..\..\Downloads\plus-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\settings-svgrepo-com.png = ..\..\..\..\..\..\Downloads\settings-svgrepo-com.png
-		..\..\..\..\..\..\Downloads\target-arrow-svgrepo-com.png = ..\..\..\..\..\..\Downloads\target-arrow-svgrepo-com.png
+		..\..\..\..\..\Downloads\bin-svgrepo-com.png = ..\..\..\..\..\Downloads\bin-svgrepo-com.png
+		..\..\..\..\..\Downloads\chevron-left-circle-svgrepo-com.png = ..\..\..\..\..\Downloads\chevron-left-circle-svgrepo-com.png
+		..\..\..\..\..\Downloads\flag-gb-svgrepo-com.png = ..\..\..\..\..\Downloads\flag-gb-svgrepo-com.png
+		..\..\..\..\..\Downloads\flag-wf-svgrepo-com.png = ..\..\..\..\..\Downloads\flag-wf-svgrepo-com.png
+		..\..\..\..\..\Downloads\multiple-svgrepo-com (1).png = ..\..\..\..\..\Downloads\multiple-svgrepo-com (1).png
+		..\..\..\..\..\Downloads\pen-field-svgrepo-com.png = ..\..\..\..\..\Downloads\pen-field-svgrepo-com.png
+		..\..\..\..\..\Downloads\plus-svgrepo-com.png = ..\..\..\..\..\Downloads\plus-svgrepo-com.png
+		..\..\..\..\..\Downloads\settings-svgrepo-com.png = ..\..\..\..\..\Downloads\settings-svgrepo-com.png
+		..\..\..\..\..\Downloads\target-arrow-svgrepo-com.png = ..\..\..\..\..\Downloads\target-arrow-svgrepo-com.png
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "..\Client\Client.csproj", "{0D320221-BAA6-47BD-B923-257275F5AB4B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,6 +36,10 @@ Global
 		{801DC297-9A6E-4CC7-BBF7-22F1A8B2892A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{801DC297-9A6E-4CC7-BBF7-22F1A8B2892A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{801DC297-9A6E-4CC7-BBF7-22F1A8B2892A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D320221-BAA6-47BD-B923-257275F5AB4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D320221-BAA6-47BD-B923-257275F5AB4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D320221-BAA6-47BD-B923-257275F5AB4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D320221-BAA6-47BD-B923-257275F5AB4B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
