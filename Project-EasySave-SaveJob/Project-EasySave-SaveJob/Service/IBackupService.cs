@@ -22,6 +22,7 @@ namespace Projet.Service
         void PauseJob(string name);
         void ResumeJob(string name);
         void StopJob(string name);
+        void PauseAllJobs();
 
         IReadOnlyList<BackupJob> GetJobs();      
     }

@@ -42,12 +42,15 @@ namespace Projet.Service
 
         public BackupService(ILogger logger, IJobRepository repo, Settings settings)
         {
-            _logger = logger;
-            _repo = repo;
-            _settings = settings;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _jobs = new List<BackupJob>(_repo.Load());
             _threadPool = ThreadPoolManager.Instance;
             _cancellationTokenSource = new CancellationTokenSource();
+            
+            // Initialize PackageBlocker with this service
+            PackageBlocker.Initialize(this);
             
             // Initialize job states for all jobs
             foreach (var job in _jobs)
@@ -646,6 +649,19 @@ namespace Projet.Service
                 jobState.State = "CANCELLED";
                 jobState.IsPaused = false;
                 jobState.PauseEvent.Set(); // Ensure it's not stuck in pause
+            }
+        }
+
+        public void PauseAllJobs()
+        {
+            Console.WriteLine("Pausing all active jobs");
+            
+            foreach (var kvp in _jobStates)
+            {
+                if (kvp.Value.State == "ACTIVE" || kvp.Value.State == "PENDING")
+                {
+                    PauseJob(kvp.Key);
+                }
             }
         }
 
