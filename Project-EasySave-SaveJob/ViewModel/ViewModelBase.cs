@@ -14,5 +14,12 @@ namespace Projet.ViewModel
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+        
+        // Nouvelle méthode qui permet de notifier explicitement un changement de propriété
+        // Utile pour forcer des rafraîchissements d'interface, notamment pour les barres de progression
+        public void NotifyPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

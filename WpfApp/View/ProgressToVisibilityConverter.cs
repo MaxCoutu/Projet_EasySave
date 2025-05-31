@@ -25,6 +25,10 @@ namespace Projet.Wpf.View
                         return ConvertJobToVisibility(value);
                     case "visibility-value":
                         return ConvertValueToVisibility(value);
+                    case "progress-fraction":
+                        return ConvertProgressToFraction(value);
+                    case "refresh-counter":
+                        return ConvertRefreshCounter(value);
                 }
             }
 
@@ -67,7 +71,8 @@ namespace Projet.Wpf.View
         {
             if (value is string state)
             {
-                if (state == "ACTIVE" || state == "PENDING")
+                // Rendre la barre visible pour tous les états actifs, y compris PAUSED
+                if (state == "ACTIVE" || state == "PENDING" || state == "PAUSED")
                 {
                     return Visibility.Visible;
                 }
@@ -82,7 +87,20 @@ namespace Projet.Wpf.View
         {
             if (value is BackupJob job)
             {
-                if (job.State == "ACTIVE" || job.State == "PENDING" || job.Progression > 0)
+                // Toujours rendre la barre visible pour les jobs actifs ou en pause, ou avec progression
+                if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+                {
+                    return Visibility.Visible;
+                }
+                
+                // Si le job est terminé (END, CANCELLED, ERROR), masquer la barre même si progression = 100%
+                if (job.State == "END" || job.State == "CANCELLED" || job.State == "ERROR")
+                {
+                    return Visibility.Collapsed;
+                }
+                
+                // Pour les autres états, rendre visible si la progression > 0
+                if (job.Progression > 0)
                 {
                     return Visibility.Visible;
                 }
@@ -106,13 +124,60 @@ namespace Projet.Wpf.View
         }
         
         /// <summary>
+        /// Convertit une valeur de progression (0-100) en fraction (0-1) pour la ProgressBar
+        /// </summary>
+        private object ConvertProgressToFraction(object value)
+        {
+            if (value != null)
+            {
+                if (double.TryParse(value.ToString(), out double numValue))
+                {
+                    // S'assurer que la valeur est entre 0 et 100
+                    numValue = Math.Min(100, Math.Max(0, numValue));
+                    
+                    // S'assurer que quand la progression est à 100%, la barre est bien remplie
+                    if (numValue >= 99.9)
+                    {
+                        return 1.0; // Forcer à 1.0 pour garantir que la barre soit complètement remplie
+                    }
+                    
+                    // Divise la valeur par 100 pour convertir de pourcentage à fraction
+                    return numValue / 100.0;
+                }
+            }
+            return 0.0;
+        }
+        
+        /// <summary>
+        /// Traite la propriété RefreshCounter en retournant une string unique à chaque changement
+        /// pour forcer le rafraîchissement visuel
+        /// </summary>
+        private object ConvertRefreshCounter(object value)
+        {
+            if (value != null && int.TryParse(value.ToString(), out int counter))
+            {
+                // Utiliser une valeur unique pour forcer le rafraîchissement
+                return $"refresh_{counter}_{DateTime.Now.Ticks}";
+            }
+            return "refresh_0";
+        }
+        
+        /// <summary>
         /// Calcule le nombre de fichiers copiés (total - restants)
         /// </summary>
         private object CalculateFilesCopied(object value)
         {
             if (value is BackupJob job && job.TotalFilesToCopy > 0)
             {
-                int copied = job.TotalFilesToCopy - job.NbFilesLeftToDo;
+                // S'assurer que le nombre de fichiers copiés est cohérent et jamais négatif
+                int copied = Math.Max(0, Math.Min(job.TotalFilesToCopy, job.TotalFilesToCopy - job.NbFilesLeftToDo));
+                
+                // Cas spécial: si la progression est à 100%, montrer tous les fichiers comme copiés
+                if (job.Progression >= 99.9)
+                {
+                    return job.TotalFilesToCopy.ToString();
+                }
+                
                 return copied.ToString();
             }
             return "0";

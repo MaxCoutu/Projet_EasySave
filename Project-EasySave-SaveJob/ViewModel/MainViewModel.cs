@@ -282,9 +282,8 @@ namespace Projet.ViewModel
                     var jobName = job.Name;
                     Console.WriteLine($"[SIMPLE] Stop triggered for job: {jobName}");
                     
-                    // IMPORTANT: Set job state to END instead of CANCELLED
-                    // This ensures the play button becomes visible again
-                    job.State = "END";
+                    // First set job state to show it's being stopped
+                    job.State = "CANCELLING";
                     
                     // Stop this specific job
                     _svc.StopJob(jobName);
@@ -296,12 +295,62 @@ namespace Projet.ViewModel
                         IsBackupRunning = false;
                     }
                     
-                    // Simply notify UI of the change
+                    // Notify UI of the change
                     OnPropertyChanged(nameof(Jobs));
                     OnPropertyChanged(nameof(RecentJobs));
                     
                     // Force additional UI updates using the ForceRefreshJobs method
                     ForceRefreshJobs();
+                    
+                    // Use a timer to ensure the job state is properly reset after a short delay
+                    var timer = new System.Threading.Timer(_ => 
+                    {
+                        try
+                        {
+                            // Execute on the UI thread
+                            _threadPool.EnqueueGuiTaskPriority(async ct =>
+                            {
+                                // Find the job in both collections and reset it properly
+                                var jobInJobs = Jobs.FirstOrDefault(j => j.Name == jobName);
+                                var jobInRecent = RecentJobs.FirstOrDefault(j => j.Name == jobName);
+                                
+                                // Reset the job in the Jobs collection
+                                if (jobInJobs != null)
+                                {
+                                    // IMPORTANT: Set job state to READY to ensure the play button becomes visible
+                                    jobInJobs.State = "READY";
+                                    jobInJobs.Progression = 0;
+                                    jobInJobs.NbFilesLeftToDo = 0;
+                                    jobInJobs.RefreshCounter++; // Force UI refresh
+                                }
+                                
+                                // Reset the job in the RecentJobs collection
+                                if (jobInRecent != null)
+                                {
+                                    // IMPORTANT: Set job state to READY to ensure the play button becomes visible
+                                    jobInRecent.State = "READY";
+                                    jobInRecent.Progression = 0;
+                                    jobInRecent.NbFilesLeftToDo = 0;
+                                    jobInRecent.RefreshCounter++; // Force UI refresh
+                                }
+                                
+                                // Notify UI of changes to both collections
+                                OnPropertyChanged(nameof(Jobs));
+                                OnPropertyChanged(nameof(RecentJobs));
+                                
+                                // Force a complete UI refresh
+                                ForceRefreshJobs();
+                                
+                                // Delay a bit and do another refresh to ensure UI is updated
+                                await Task.Delay(100);
+                                ForceRefreshJobs();
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error in stop job timer: {ex.Message}");
+                        }
+                    }, null, 300, System.Threading.Timeout.Infinite); // Execute once after 300ms
                 }
             }, param => param is BackupJob job && (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING"));
 

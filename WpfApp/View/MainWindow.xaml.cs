@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using System.Windows.Media.Animation;
 using Projet.Model;
 using Projet.ViewModel;
 using WpfApp;
@@ -21,12 +22,17 @@ namespace Projet.Wpf.View
         }
 
         private readonly MainViewModel _vm;
+        private DateTime _lastRenderTime = DateTime.Now; // Pour limiter les rendus
+        private Random _rnd = new Random(); // Pour les micro-variations
 
         public MainWindow()
         {
             InitializeComponent();
             _vm = new MainViewModel(App.BackupService, App.LanguageService, App.PathProvider);
             DataContext = _vm;
+            
+            // S'abonner à l'événement de rendu global pour forcer les rafraîchissements
+            CompositionTarget.Rendering += CompositionTarget_Rendering;
             
             // Refresh jobs when window is loaded
             this.Loaded += MainWindow_Loaded;
@@ -46,6 +52,152 @@ namespace Projet.Wpf.View
             // Set focus management properties for the window
             System.Windows.Input.KeyboardNavigation.SetTabNavigation(this, System.Windows.Input.KeyboardNavigationMode.None);
             System.Windows.Input.KeyboardNavigation.SetControlTabNavigation(this, System.Windows.Input.KeyboardNavigationMode.None);
+        }
+        
+        // Méthode qui s'exécute à chaque frame rendue par WPF - utilise le rendu GPU pour forcer les rafraîchissements
+        private void CompositionTarget_Rendering(object sender, EventArgs e)
+        {
+            // Limiter la fréquence pour éviter trop de rendus inutiles (1 toutes les 100ms = 10 fps)
+            if ((DateTime.Now - _lastRenderTime).TotalMilliseconds < 100) return;
+            _lastRenderTime = DateTime.Now;
+            
+            try
+            {
+                // Forcer le rafraîchissement des jobs dans la vue principale
+                foreach (var job in _vm.RecentJobs)
+                {
+                    if (job.State == "ACTIVE" || job.State == "PENDING" || job.State == "PAUSED")
+                    {
+                        // Forcer le compteur de rafraîchissement à s'incrémenter 
+                        job.RefreshCounter++;
+                        
+                        // Forcer l'invalidation visuelle des ProgressBars
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => {
+                            // Trouver l'ItemsControl contenant les jobs
+                            var jobsContainer = FindVisualChild<ItemsControl>(this, "RecentJobsItemsControl");
+                            if (jobsContainer != null)
+                            {
+                                // Trouver le conteneur correspondant au job
+                                var item = jobsContainer.ItemContainerGenerator.ContainerFromItem(job) as FrameworkElement;
+                                if (item != null)
+                                {
+                                    // Trouver la ProgressBar
+                                    var progressBar = FindVisualChild<ProgressBar>(item, "JobProgressBar");
+                                    if (progressBar != null)
+                                    {
+                                        // Forcer le rafraîchissement visuel
+                                        ForceProgressBarUpdate(progressBar, job.Progression / 100.0);
+                                        
+                                        // Force tous les éléments parents à se rafraîchir également
+                                        InvalidateParentVisuals(progressBar);
+                                    }
+                                }
+                            }
+                        }), DispatcherPriority.Render);
+                    }
+                }
+                
+                // Force un rafraîchissement global pour les données
+                if (_vm.RecentJobs.Count > 0)
+                {
+                    // Toutes les 500ms (5 frames à 10fps), force une relecture complète des données
+                    if (_rnd.Next(0, 5) == 0)
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(new Action(() => {
+                            _vm.ForceRefreshJobs();
+                        }), DispatcherPriority.Background);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CompositionTarget_Rendering: {ex.Message}");
+            }
+        }
+        
+        // Force tous les parents à se rafraîchir
+        private void InvalidateParentVisuals(DependencyObject element)
+        {
+            var current = element;
+            while (current != null && current != this)
+            {
+                if (current is UIElement uiElement)
+                {
+                    uiElement.InvalidateVisual();
+                }
+                
+                // Remonter dans l'arborescence
+                current = VisualTreeHelper.GetParent(current);
+            }
+        }
+        
+        // Nouvelle méthode pour forcer le rafraîchissement d'une barre de progression avec une animation
+        private void ForceProgressBarUpdate(ProgressBar progressBar, double value)
+        {
+            try
+            {
+                // Créer une micro-animation qui force le rafraîchissement visuel
+                var animation = new DoubleAnimation(
+                    value - 0.0001,  // Valeur de départ légèrement différente
+                    value,           // Valeur finale
+                    new Duration(TimeSpan.FromMilliseconds(50)) // Animation très rapide
+                );
+                
+                // Démarrer l'animation sur la propriété Value
+                progressBar.BeginAnimation(ProgressBar.ValueProperty, animation);
+                
+                // Forcer l'invalidation visuelle
+                progressBar.InvalidateVisual();
+                progressBar.UpdateLayout();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ForceProgressBarUpdate: {ex.Message}");
+            }
+        }
+        
+        // Méthode utilitaire pour trouver un enfant visuel d'un type spécifique
+        private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+                
+                var result = FindVisualChild<T>(child);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            
+            return null;
+        }
+        
+        // Méthode utilitaire pour trouver un enfant visuel par nom
+        private T FindVisualChild<T>(DependencyObject parent, string name) where T : FrameworkElement
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                
+                if (child is T typedChild && typedChild.Name == name)
+                {
+                    return typedChild;
+                }
+                
+                var result = FindVisualChild<T>(child, name);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            
+            return null;
         }
         
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -214,6 +366,13 @@ namespace Projet.Wpf.View
                     _vm.ForceRefreshJobs();
                 }
             }
+        }
+        
+        protected override void OnClosed(EventArgs e)
+        {
+            // Se désabonner de l'événement de rendu lorsque la fenêtre est fermée
+            CompositionTarget.Rendering -= CompositionTarget_Rendering;
+            base.OnClosed(e);
         }
     }
 }

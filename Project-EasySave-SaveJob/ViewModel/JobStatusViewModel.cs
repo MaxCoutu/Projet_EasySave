@@ -5,32 +5,169 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Timers;
 using System.ComponentModel;
+using System.Threading;
 using Projet.Infrastructure;
 using Projet.Model;
 
 namespace Projet.ViewModel
 {
-    public class JobStatusViewModel : ViewModelBase
+    public class JobStatusViewModel : ViewModelBase, IDisposable
     {
-        private readonly Timer _refreshTimer;
         private readonly IPathProvider _pathProvider;
+        private readonly StatusMonitor _statusMonitor;
         private Dictionary<string, StatusEntry> _statusCache = new Dictionary<string, StatusEntry>();
-        private Dictionary<string, DateTime> _lastJobUpdate = new Dictionary<string, DateTime>();
-        private DateTime _lastFileModified = DateTime.MinValue;
-        private int _consecutiveEmptyReads = 0;
+        private readonly System.Timers.Timer _uiUpdateTimer;
+        private readonly Dictionary<string, double> _lastProgressValues = new Dictionary<string, double>();
+        
+        // Pour le lissage des animations
+        private readonly Dictionary<string, double> _targetProgress = new Dictionary<string, double>();
+        private readonly Dictionary<string, DateTime> _lastUpdateTime = new Dictionary<string, DateTime>();
+        private readonly Dictionary<string, bool> _isAnimating = new Dictionary<string, bool>();
+        
+        // Compteur pour forcer la relecture complète
+        private int _forceRefreshCounter = 0;
+        
+        // Utilisé pour la synchronisation des mises à jour entre threads
+        private readonly SynchronizationContext _syncContext;
 
         public JobStatusViewModel(IPathProvider pathProvider)
         {
             _pathProvider = pathProvider;
             
-            // Configurer un timer pour rafraîchir automatiquement l'état des tâches
-            // Réduire l'intervalle à 100ms pour une mise à jour plus fréquente
-            _refreshTimer = new Timer(100);
-            _refreshTimer.Elapsed += (s, e) => RefreshStatus();
-            _refreshTimer.Start();
+            // Capturer le contexte de synchronisation courant
+            _syncContext = SynchronizationContext.Current ?? new SynchronizationContext();
             
-            // Force une première lecture immédiate
-            RefreshStatus();
+            // Créer et démarrer le moniteur de statut dans son propre thread
+            _statusMonitor = new StatusMonitor(pathProvider, 10); // Vérifier toutes les 10ms
+            _statusMonitor.StatusChanged += OnStatusChanged;
+            _statusMonitor.Start();
+            
+            // Créer un timer pour les mises à jour d'interface plus fréquentes
+            _uiUpdateTimer = new System.Timers.Timer(8); // Rafraîchir l'UI à ~120 FPS
+            _uiUpdateTimer.Elapsed += (s, e) => {
+                // Forcer une relecture complète régulière du fichier JSON
+                // C'est EXACTEMENT ce qui se passe lors d'une transition pause/resume
+                _forceRefreshCounter++;
+                
+                // Forcer un refresh complet à intervalle régulier (comme lors des transitions pause/resume)
+                if (_forceRefreshCounter % 10 == 0) // Toutes les 80ms (10 * 8ms)
+                {
+                    _statusMonitor.ForceRefresh(); // Relire le fichier JSON complètement
+                }
+                
+                // Rafraîchir l'interface entre les lectures complètes
+                RefreshJobsFromCache();
+            };
+            _uiUpdateTimer.Start();
+            
+            Console.WriteLine("JobStatusViewModel initialized with ultra-fast UI updates and forced refreshes");
+        }
+
+        // Appelé lorsque le moniteur détecte un changement de statut
+        private void OnStatusChanged(Dictionary<string, StatusEntry> newStatus)
+        {
+            // Mettre à jour le cache avec les nouvelles valeurs (thread background)
+            lock (_statusCache)
+            {
+                // IMPORTANT: Remplacer complètement le cache à chaque fois
+                // pour imiter exactement ce qui se passe lors d'une transition pause/resume
+                _statusCache = new Dictionary<string, StatusEntry>(newStatus);
+                
+                // Mettre à jour les cibles d'animation pour chaque job
+                foreach (var entry in newStatus)
+                {
+                    string jobName = entry.Key;
+                    
+                    // Mise à jour des valeurs cibles pour l'animation fluide
+                    double targetValue = Math.Min(100, Math.Max(0, entry.Value.Progression));
+                    _targetProgress[jobName] = targetValue;
+                    
+                    // Si le job n'est pas encore dans notre liste, initialiser ses valeurs
+                    if (!_lastProgressValues.ContainsKey(jobName))
+                    {
+                        _lastProgressValues[jobName] = 0;
+                        _lastUpdateTime[jobName] = DateTime.Now;
+                        _isAnimating[jobName] = true;
+                    }
+                    
+                    // Pour les fins de job, mettre à jour immédiatement
+                    if (entry.Value.State == "END" || entry.Value.State == "ERROR" || 
+                        entry.Value.State == "CANCELLED")
+                    {
+                        _lastProgressValues[jobName] = 100;
+                        _isAnimating[jobName] = false;
+                    }
+                    // Pour les jobs ACTIFS ou en ATTENTE, toujours animer
+                    else if (entry.Value.State == "ACTIVE" || entry.Value.State == "PENDING")
+                    {
+                        _isAnimating[jobName] = true;
+                        
+                        // Si la progression cible est à 0, mettre une valeur minimale pour montrer une activité
+                        if (targetValue < 0.1 && entry.Value.State == "ACTIVE")
+                        {
+                            _lastProgressValues[jobName] = Math.Max(_lastProgressValues[jobName], 0.5);
+                        }
+                    }
+                }
+            }
+            
+            // Forcer le rafraîchissement UI via le contexte de synchronisation
+            _syncContext.Post(_ => {
+                // Notifier le changement global pour forcer le rafraîchissement de l'UI
+                NotifyPropertyChanged("StatusUpdated");
+            }, null);
+        }
+        
+        // Rafraîchit les jobs à partir du cache (appelé par le timer)
+        private void RefreshJobsFromCache()
+        {
+            // Rien à faire si le cache est vide
+            if (_statusCache.Count == 0)
+                return;
+                
+            // Mettre à jour tous les jobs qui sont en cours d'animation
+            lock (_statusCache)
+            {
+                foreach (var job in _isAnimating.Where(j => j.Value).ToList())
+                {
+                    string jobName = job.Key;
+                    
+                    // Si le job n'est plus dans le cache, arrêter l'animation
+                    if (!_targetProgress.ContainsKey(jobName))
+                    {
+                        _isAnimating[jobName] = false;
+                        continue;
+                    }
+                    
+                    // Calculer le temps écoulé depuis la dernière mise à jour
+                    double currentValue = _lastProgressValues[jobName];
+                    double targetValue = _targetProgress[jobName];
+                    
+                    // Si on a atteint la cible, arrêter l'animation
+                    if (Math.Abs(currentValue - targetValue) < 0.1)
+                    {
+                        _lastProgressValues[jobName] = targetValue;
+                        continue;
+                    }
+                    
+                    // Calculer une progression lissée avec animation plus rapide
+                    double progress = currentValue + (targetValue - currentValue) * 0.25;
+                    
+                    // Assurer une progression minimale
+                    if (targetValue > currentValue && progress < currentValue + 0.1)
+                        progress = currentValue + 0.1;
+                        
+                    // Mettre à jour la valeur en cache
+                    _lastProgressValues[jobName] = progress;
+                    _lastUpdateTime[jobName] = DateTime.Now;
+                }
+            }
+            
+            // Utiliser le contexte de synchronisation pour les mises à jour UI
+            _syncContext.Post(_ => {
+                // Notifier le changement global pour forcer le rafraîchissement de l'UI
+                NotifyPropertyChanged("StatusUpdated");
+            }, null);
         }
 
         // Permet d'attacher un StatusEntry à un BackupJob
@@ -41,234 +178,84 @@ namespace Projet.ViewModel
 
             // Store the current state before updating
             string previousState = job.State;
-            double previousProgress = job.Progression;
             
-            // Check if we need to preserve this state
-            bool preserveState = previousState == "END" || previousState == "CANCELLED";
+            // Obtenir le statut depuis le cache thread-safe
+            StatusEntry status = null;
+            double animatedProgress = 0;
             
-            // Refresh status data
-            RefreshStatus();
-
-            if (_statusCache.TryGetValue(job.Name, out StatusEntry status))
+            lock (_statusCache)
             {
-                // Check if this status update is recent enough
-                bool isRecentUpdate = IsRecentUpdate(job.Name, status);
+                _statusCache.TryGetValue(job.Name, out status);
+                _lastProgressValues.TryGetValue(job.Name, out animatedProgress);
+            }
+
+            if (status != null)
+            {
+                // CRUCIAL: Appliquer directement les valeurs du status.json
+                // C'est exactement ce qui se passe lors d'une transition pause/resume
                 
-                // Log status data for debugging
-                Console.WriteLine($"Applying status for job '{job.Name}': State={status.State}, Progress={status.Progression:F2}%, Recent={isRecentUpdate}");
+                // Mettre à jour l'état du job
+                job.State = status.State;
                 
-                // If job was manually stopped/cancelled and we want to preserve that state
-                if (preserveState && (status.State == "READY" || string.IsNullOrEmpty(status.State)))
+                // Calculer une progression lissée
+                double progressToDisplay;
+                
+                // Pour les états terminaux, mettre immédiatement à 100%
+                if (status.State == "END" || status.State == "ERROR" || status.State == "CANCELLED")
                 {
-                    // Preserve the END state but update other properties
-                    job.Progression = Math.Min(100, Math.Max(0, status.Progression));
-                    job.TotalFilesToCopy = status.TotalFilesToCopy;
-                    job.TotalFilesSize = status.TotalFilesSize;
-                    job.NbFilesLeftToDo = status.NbFilesLeftToDo;
-                    
-                    // Log this special case
-                    Console.WriteLine($"Preserving '{previousState}' state for job '{job.Name}' instead of '{status.State}'");
+                    progressToDisplay = 100;
+                    _isAnimating[job.Name] = false;
                 }
+                // Pour les jobs actifs, prendre la valeur directement du status.json
+                // comme lors d'une transition pause/resume
                 else
                 {
-                    // Validate progression value before updating
-                    double newProgress = Math.Min(100, Math.Max(0, status.Progression));
+                    // Utiliser directement la valeur du fichier status.json
+                    progressToDisplay = status.Progression;
                     
-                    // Check for invalid progress jumps (prevent sudden jumps to high values)
-                    if (status.State == "ACTIVE" && previousState == "ACTIVE" && 
-                        newProgress > previousProgress + 20 && previousProgress > 0)
-                    {
-                        // If progress jumps by more than 20% in one update, it might be an error
-                        Console.WriteLine($"Warning: Large progress jump detected for job '{job.Name}': {previousProgress}% -> {newProgress}%");
-                        
-                        // Use a more reasonable progress value (previous + small increment)
-                        newProgress = Math.Min(100, previousProgress + 2);
-                        Console.WriteLine($"Limiting progress to {newProgress}%");
-                    }
+                    // Ajouter une micro-variation pour forcer le rafraîchissement visuel
+                    Random rnd = new Random();
+                    progressToDisplay += rnd.NextDouble() * 0.001; // Variation imperceptible
                     
-                    // If job is complete (100%), ensure state is END
-                    if (newProgress >= 99.9 && status.State == "ACTIVE")
-                    {
-                        Console.WriteLine($"Job '{job.Name}' reached 100% progress, setting state to END");
-                        job.State = "END";
-                        job.Progression = 100;
-                    }
-                    else
-                    {
-                        // Transfer all properties from the StatusEntry to the BackupJob
-                        job.State = status.State;
-                        job.Progression = newProgress;
-                    }
-                    
-                    job.TotalFilesToCopy = status.TotalFilesToCopy;
-                    job.TotalFilesSize = status.TotalFilesSize;
-                    job.NbFilesLeftToDo = status.NbFilesLeftToDo;
-                    
-                    // Log significant state changes
-                    if (previousState != job.State)
-                    {
-                        Console.WriteLine($"Job '{job.Name}' state changed: {previousState} -> {job.State}");
-                    }
-                    
-                    // Log significant progress changes
-                    if (Math.Abs(previousProgress - job.Progression) > 1)
-                    {
-                        Console.WriteLine($"Job '{job.Name}' progress changed: {previousProgress:F2}% -> {job.Progression:F2}%");
-                    }
-                    
-                    // Update last update time for this job
-                    _lastJobUpdate[job.Name] = DateTime.Now;
+                    _isAnimating[job.Name] = true;
                 }
+                
+                // Assurer que la valeur est dans les limites 0-100%
+                progressToDisplay = Math.Min(100, Math.Max(0, progressToDisplay));
+                
+                // Mettre à jour la progression avec la valeur calculée
+                job.Progression = progressToDisplay;
+                
+                // Mettre à jour les compteurs de fichiers directement depuis le status.json
+                job.TotalFilesToCopy = status.TotalFilesToCopy;
+                job.TotalFilesSize = status.TotalFilesSize;
+                job.NbFilesLeftToDo = status.NbFilesLeftToDo;
+                
+                // CRUCIAL: Forcer le rafraîchissement complet des propriétés
+                // exactement comme lors d'une transition pause/resume
+                job.ForceProgressRefresh();
+                
+                // Utiliser le contexte de synchronisation pour les mises à jour UI
+                _syncContext.Post(_ => {
+                    job.ForceProgressRefresh(); // Appel supplémentaire sur le thread UI
+                }, null);
             }
             else
             {
-                // If no status is available, use default values
-                // But only change state if we're not preserving a special state
-                if (!preserveState)
+                // Si pas de statut, maintenir l'état actuel
+                if (previousState != "END" && previousState != "CANCELLED")
                 {
-                    job.State = "READY"; // Changed from END to READY to ensure play button appears
-                }
-                
-                // Keep previous progress if job is complete
-                if (job.State != "END" && job.State != "CANCELLED")
-                {
+                    job.State = "READY";
                     job.Progression = 0;
                 }
-                
-                job.TotalFilesToCopy = 0;
-                job.TotalFilesSize = 0;
-                job.NbFilesLeftToDo = 0;
-            }
-        }
-
-        private bool IsRecentUpdate(string jobName, StatusEntry status)
-        {
-            // If we have a timestamp in the status, use it
-            if (status.Timestamp != default)
-            {
-                // Consider updates within the last 5 seconds as recent
-                return (DateTime.Now - status.Timestamp).TotalSeconds <= 5;
-            }
-            
-            // If we have a record of the last time we updated this job, check that
-            if (_lastJobUpdate.TryGetValue(jobName, out DateTime lastUpdate))
-            {
-                // Consider updates within the last 5 seconds as recent
-                return (DateTime.Now - lastUpdate).TotalSeconds <= 5;
-            }
-            
-            // If we have no record, assume it's recent
-            return true;
-        }
-
-        private void RefreshStatus()
-        {
-            try
-            {
-                string statusPath = Path.Combine(_pathProvider.GetStatusDir(), "status.json");
-                if (!File.Exists(statusPath))
-                {
-                    _consecutiveEmptyReads++;
-                    if (_consecutiveEmptyReads > 5)
-                    {
-                        Console.WriteLine("Status file does not exist after multiple attempts");
-                    }
-                    return;
-                }
-                
-                // Vérifier si le fichier a été modifié depuis la dernière lecture
-                var fileInfo = new FileInfo(statusPath);
-                if (fileInfo.LastWriteTime <= _lastFileModified && _statusCache.Count > 0)
-                {
-                    // Le fichier n'a pas changé, pas besoin de le relire
-                    return;
-                }
-                
-                _lastFileModified = fileInfo.LastWriteTime;
-
-                // Essayer de lire le fichier avec un accès partagé
-                string json = "";
-                int retryCount = 0;
-                bool success = false;
-                
-                while (!success && retryCount < 3)
-                {
-                    try
-                    {
-                        using (var fileStream = new FileStream(statusPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                        using (var reader = new StreamReader(fileStream))
-                        {
-                            json = reader.ReadToEnd();
-                        }
-                        success = true;
-                    }
-                    catch (IOException)
-                    {
-                        // File might be locked by another process, retry after a short delay
-                        retryCount++;
-                        System.Threading.Thread.Sleep(50);
-                    }
-                }
-                
-                if (!success)
-                {
-                    Console.WriteLine("Failed to read status file after multiple attempts");
-                    return;
-                }
-                
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    _consecutiveEmptyReads++;
-                    if (_consecutiveEmptyReads > 5)
-                    {
-                        Console.WriteLine("Status file is empty after multiple attempts");
-                    }
-                    return;
-                }
-                
-                _consecutiveEmptyReads = 0; // Reset counter on successful read
-
-                try
-                {
-                    var entries = JsonSerializer.Deserialize<List<StatusEntry>>(json);
-                    if (entries == null)
-                        return;
-
-                    // Mettre à jour le cache de statut
-                    var newCache = new Dictionary<string, StatusEntry>();
-                    foreach (var entry in entries)
-                    {
-                        if (!string.IsNullOrEmpty(entry.Name))
-                        {
-                            // Ensure progression is within bounds
-                            entry.Progression = Math.Min(100, Math.Max(0, entry.Progression));
-                            
-                            // Add to new cache
-                            newCache[entry.Name] = entry;
-                            
-                            // Log status
-                            Console.WriteLine($"Read status for job '{entry.Name}': State={entry.State}, Progress={entry.Progression:F2}%");
-                        }
-                    }
-                    
-                    // Replace cache with new data
-                    _statusCache = newCache;
-                }
-                catch (JsonException ex)
-                {
-                    Console.WriteLine($"Error parsing status JSON: {ex.Message}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Erreur lors du rafraîchissement du statut : {ex.Message}");
             }
         }
 
         public void Dispose()
         {
-            _refreshTimer?.Stop();
-            _refreshTimer?.Dispose();
+            _uiUpdateTimer?.Stop();
+            _uiUpdateTimer?.Dispose();
+            _statusMonitor?.Dispose();
         }
     }
 } 

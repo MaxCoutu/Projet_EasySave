@@ -6,6 +6,7 @@
     <UserControl.Resources>
         <local:FolderNameConverter x:Key="FolderNameConverter"/>
         <local:ProgressToVisibilityConverter x:Key="ProgressToVisibilityConverter"/>
+        <local:JobStateToVisibilityConverter x:Key="JobStateToVisibilityConverter"/>
         
         <!-- Style pour une ProgressBar arrondie et esthétique -->
         <Style x:Key="RoundedProgressBar" TargetType="ProgressBar">
@@ -21,8 +22,76 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+            <Style.Triggers>
+                <!-- Animation permanente qui force le rafraîchissement visuel continu -->
+                <Trigger Property="IsVisible" Value="True">
+                    <Trigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard RepeatBehavior="Forever">
+                                <DoubleAnimation 
+                                    Storyboard.TargetProperty="Opacity" 
+                                    From="0.995" To="1.0" 
+                                    Duration="0:0:0.1"
+                                    AutoReverse="True" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </Trigger.EnterActions>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Custom Button Style for Control Buttons -->
+        <Style x:Key="ControlButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Width" Value="25"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="ClickMode" Value="Press"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#44FFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#88FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </UserControl.Resources>
+    
+    <!-- Timer invisible qui force le rafraîchissement global -->
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="UserControl.Loaded">
+            <BeginStoryboard>
+                <Storyboard>
+                    <!-- Animation invisible qui s'exécute en permanence pour forcer les rafraîchissements -->
+                    <DoubleAnimation 
+                        Storyboard.TargetProperty="Opacity" 
+                        From="1.0" To="1.0" 
+                        Duration="0:0:0.05" 
+                        RepeatBehavior="Forever"/>
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </UserControl.Triggers>
+    
     <Border CornerRadius="15"
             Padding="20"
             BorderThickness="1">
@@ -60,9 +129,9 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition/>
                                         <ColumnDefinition Width="Auto"/>
-                                        <!-- Nouvelle colonne pour le bouton de suppression -->
                                         <ColumnDefinition Width="Auto"/>
-                                        <!-- Colonne pour le bouton "Run" -->
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" Grid.Row="0">
@@ -95,33 +164,115 @@
                                         </TextBlock>
                                     </StackPanel>
 
-                                    <!-- Barre de progression pour le job en cours -->
-                                    <Grid x:Name="ProgressPanel" Grid.Row="1" Grid.ColumnSpan="3" Margin="0,10,0,0"
-                                          Visibility="{Binding Path=State, Converter={StaticResource ProgressToVisibilityConverter}}">
+                                    <!-- Barre de progression pour le job en cours avec auto-animation -->
+                                    <Grid x:Name="ProgressPanel" Grid.Row="1" Grid.ColumnSpan="5" Margin="0,10,0,0">
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding State}" Value="ACTIVE">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding State}" Value="PENDING">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding State}" Value="PAUSED">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <!-- Always collapse when state is END or READY -->
+                                                    <DataTrigger Binding="{Binding State}" Value="END">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding State}" Value="READY">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding State}" Value="CANCELLED">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding State}" Value="ERROR">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <!-- Collapse when progression is 0 and not in ACTIVE state -->
+                                                    <DataTrigger Binding="{Binding Progression}" Value="0">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <!-- Special case for ACTIVE jobs with 0 progression - keep visible -->
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding Progression}" Value="0" />
+                                                            <Condition Binding="{Binding State}" Value="ACTIVE" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         
+                                        <!-- Timer interne pour forcer le rafraîchissement continu quand visible -->
+                                        <Grid.Triggers>
+                                            <EventTrigger RoutedEvent="Grid.Loaded">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation 
+                                                            Storyboard.TargetProperty="Opacity" 
+                                                            From="1" To="1" 
+                                                            Duration="0:0:0.05" 
+                                                            RepeatBehavior="Forever"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Grid.Triggers>
+                                        
+                                        <!-- Utilisation d'une ProgressBar avec un rafraîchissement forcé par animation continue -->
                                         <ProgressBar Grid.Row="0" Height="15" 
+                                                     x:Name="JobProgressBar"
                                                      Minimum="0" Maximum="1" 
-                                                     Value="{Binding Progression}"
+                                                     Value="{Binding Progression, Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=progress-fraction, NotifyOnTargetUpdated=True, UpdateSourceTrigger=PropertyChanged}"
                                                      Foreground="#FF7428D7" 
                                                      Background="#33FFFFFF"
                                                      BorderThickness="0"
-                                                     Style="{StaticResource RoundedProgressBar}"/>
+                                                     Style="{StaticResource RoundedProgressBar}"
+                                                     Tag="{Binding RefreshCounter, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}">
+                                            <!-- Animation supplémentaire directement sur la ProgressBar -->
+                                            <ProgressBar.Triggers>
+                                                <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.99" To="1.0" Duration="0:0:0.01"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                                <EventTrigger RoutedEvent="ProgressBar.Loaded">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation 
+                                                                Storyboard.TargetProperty="Opacity" 
+                                                                From="0.995" To="1.0" 
+                                                                Duration="0:0:0.1"
+                                                                RepeatBehavior="Forever"
+                                                                AutoReverse="True" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </ProgressBar.Triggers>
+                                        </ProgressBar>
                                                      
                                         <TextBlock Grid.Row="1" Margin="0,5,0,0" FontSize="11" Foreground="#CCCCCC">
-                                            <Run Text="{Binding Progression, StringFormat=\{0:P0\}}"/>
+                                            <Run Text="{Binding Progression, StringFormat=\{0:F1\}, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
+                                            <Run Text="%"/>
                                             <Run Text=" - "/>
-                                            <Run Text="{Binding State}"/>
+                                            <Run Text="{Binding State, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                             <Run Text=" - fichiers copiés: "/>
                                             <Run FontWeight="Bold" Foreground="#AAFFAA" 
-                                                 Text="{Binding ., Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=calculate-copied}"/>
+                                                 Text="{Binding ., Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=calculate-copied, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                             <Run Text="/"/>
-                                            <Run Text="{Binding TotalFilesToCopy}"/>
+                                            <Run Text="{Binding TotalFilesToCopy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                             <Run Text=" - "/>
-                                            <Run Text="{Binding TotalFilesSize, StringFormat=\{0\} octets}"/>
+                                            <Run Text="{Binding TotalFilesSize, StringFormat=\{0\} octets, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                         </TextBlock>
                                     </Grid>
                                     
@@ -131,7 +282,7 @@
                                             Background="Transparent"
                                             Cursor="Hand"
                                             BorderThickness="0"
-                                            Margin="0,0,20,0"
+                                            Margin="0,0,10,0"
                                             Command="{Binding DataContext.RemoveJobCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             ToolTip="{loc:Loc delete_tooltip}">
@@ -146,15 +297,71 @@
                                         </Viewbox>
                                     </Button>
 
+                                    <!-- Pause/Resume Button -->
+                                    <Border Grid.Column="2" Grid.Row="0" 
+                                            HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"
+                                            Width="30" Height="30"
+                                            x:Name="PauseButtonContainer"
+                                            Background="Transparent"
+                                            Margin="0,0,10,0"
+                                            Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=PauseResume}">
+                                        <Button Style="{StaticResource ControlButtonStyle}"
+                                                Command="{Binding DataContext.PauseResumeJobCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="Pause/Resume"
+                                                Tag="{Binding State}"
+                                                Click="ControlButton_Click">
+                                            <Path Stroke="White" 
+                                                  StrokeThickness="2"
+                                                  Fill="Transparent">
+                                                <Path.Style>
+                                                    <Style TargetType="Path">
+                                                        <Setter Property="Data" Value="M4,2 L4,14 L10,14 L10,2 z M14,2 L14,14 L20,14 L20,2 z" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding State}" Value="PAUSED">
+                                                                <Setter Property="Data" Value="M8,5 L8,19 L19,12 z" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Path.Style>
+                                            </Path>
+                                        </Button>
+                                    </Border>
+                                    
+                                    <!-- Stop Button -->
+                                    <Border Grid.Column="3" Grid.Row="0" 
+                                            HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"
+                                            Width="30" Height="30"
+                                            Background="Transparent"
+                                            x:Name="StopButtonContainer"
+                                            Margin="0,0,10,0"
+                                            Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Stop}">
+                                        <Button Style="{StaticResource ControlButtonStyle}"
+                                                Command="{Binding DataContext.StopJobCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="Stop"
+                                                Tag="{Binding State}"
+                                                Click="ControlButton_Click">
+                                            <Path Data="M2,2 L22,2 L22,22 L2,22 z"
+                                                  Stroke="White"
+                                                  StrokeThickness="2"
+                                                  Fill="Transparent"/>
+                                        </Button>
+                                    </Border>
+
                                     <!-- Bouton "Run" -->
-                                    <Button Grid.Column="2" Grid.Row="0"
+                                    <Button Grid.Column="4" Grid.Row="0"
                                             Width="25" Height="25"
                                             Cursor="Hand"
                                             Background="Transparent"
                                             BorderThickness="0"
                                             Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
-                                            ToolTip="{loc:Loc play_tooltip}">
+                                            ToolTip="{loc:Loc play_tooltip}"
+                                            Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Play}"
+                                            Click="ControlButton_Click">
                                         <Path Data="M0,0 L0,20 L18,10 Z"
                                               Fill="White"
                                               Stretch="Uniform"/>

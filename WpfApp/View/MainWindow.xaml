@@ -262,7 +262,9 @@
                                        HorizontalAlignment="Center"/>
 
                             <!-- Items list -->
-                            <ItemsControl x:Name="RecentJobsControl" ItemsSource="{Binding RecentJobs}">
+                            <ItemsControl Margin="0,20,0,0" 
+                                        ItemsSource="{Binding RecentJobs}"
+                                        x:Name="RecentJobsItemsControl">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border CornerRadius="12"
@@ -318,25 +320,86 @@
                                                         <RowDefinition Height="Auto"/>
                                                     </Grid.RowDefinitions>
                                                     
-                                                    <ProgressBar Grid.Row="0" Height="15" 
+                                                    <Grid.Style>
+                                                        <Style TargetType="Grid">
+                                                            <Style.Triggers>
+                                                                <!-- Always collapse when state is END or READY -->
+                                                                <DataTrigger Binding="{Binding State}" Value="END">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="READY">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="CANCELLED">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding State}" Value="ERROR">
+                                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Grid.Style>
+                                                    
+                                                    <!-- Timer interne pour forcer le rafraîchissement continu quand visible -->
+                                                    <Grid.Triggers>
+                                                        <EventTrigger RoutedEvent="Grid.Loaded">
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation 
+                                                                        Storyboard.TargetProperty="Opacity" 
+                                                                        From="1" To="1" 
+                                                                        Duration="0:0:0.05" 
+                                                                        RepeatBehavior="Forever"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
+                                                    </Grid.Triggers>
+                                                    
+                                                    <ProgressBar Grid.Row="0" Height="15"
+                                                                 x:Name="JobProgressBar"
                                                                  Minimum="0" Maximum="1" 
-                                                                 Value="{Binding Progression}"
+                                                                 Value="{Binding Progression, Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=progress-fraction, NotifyOnTargetUpdated=True, UpdateSourceTrigger=PropertyChanged}"
                                                                  Foreground="#FF7428D7" 
                                                                  Background="#33FFFFFF"
                                                                  BorderThickness="0"
-                                                                 Style="{StaticResource RoundedProgressBar}"/>
+                                                                 Tag="{Binding RefreshCounter, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"
+                                                                 Style="{StaticResource RoundedProgressBar}">
+                                                        <!-- Animation supplémentaire directement sur la ProgressBar -->
+                                                        <ProgressBar.Triggers>
+                                                            <EventTrigger RoutedEvent="Binding.TargetUpdated">
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.99" To="1.0" Duration="0:0:0.01"/>
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </EventTrigger>
+                                                            <EventTrigger RoutedEvent="ProgressBar.Loaded">
+                                                                <BeginStoryboard>
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation 
+                                                                            Storyboard.TargetProperty="Opacity" 
+                                                                            From="0.995" To="1.0" 
+                                                                            Duration="0:0:0.1"
+                                                                            RepeatBehavior="Forever"
+                                                                            AutoReverse="True" />
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </EventTrigger>
+                                                        </ProgressBar.Triggers>
+                                                    </ProgressBar>
                                                                  
                                                     <TextBlock Grid.Row="1" Margin="0,5,0,0" FontSize="11" Foreground="#CCCCCC">
-                                                        <Run Text="{Binding Progression, StringFormat=\{0:P0\}}"/>
+                                                        <Run Text="{Binding Progression, StringFormat=\{0:F1\}, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
+                                                        <Run Text="%"/>
                                                         <Run Text=" - "/>
-                                                        <Run Text="{Binding State}"/>
+                                                        <Run Text="{Binding State, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                                         <Run Text=" - fichiers copiés: "/>
                                                         <Run FontWeight="Bold" Foreground="#AAFFAA" 
-                                                             Text="{Binding ., Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=calculate-copied}"/>
+                                                             Text="{Binding ., Converter={StaticResource ProgressToVisibilityConverter}, ConverterParameter=calculate-copied, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                                         <Run Text="/"/>
-                                                        <Run Text="{Binding TotalFilesToCopy}"/>
+                                                        <Run Text="{Binding TotalFilesToCopy, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                                         <Run Text=" - "/>
-                                                        <Run Text="{Binding TotalFilesSize, StringFormat=\{0\} octets}"/>
+                                                        <Run Text="{Binding TotalFilesSize, StringFormat=\{0\} octets, UpdateSourceTrigger=PropertyChanged, Mode=OneWay}"/>
                                                     </TextBlock>
                                                 </Grid>
 

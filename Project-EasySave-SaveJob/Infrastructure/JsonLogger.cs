@@ -3,21 +3,27 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using System.Timers;
 
 namespace Projet.Infrastructure
 {
-    public class JsonLogger : ILogger
+    public class JsonLogger : ILogger, IDisposable
     {
         private readonly string _logDir;
         private readonly string _statusDir;
-        private readonly object _statusLock = new object();
-        private readonly int _maxRetries = 5;
-        private readonly int _retryDelayMs = 50;
-
+        private readonly string _statusFilePath;
+        private readonly object _writeLock = new object();
+        private Dictionary<string, StatusEntry> _statusCache = new Dictionary<string, StatusEntry>();
+        private bool _statusCacheDirty = false;
+        private System.Timers.Timer _flushTimer;
+        private DateTime _lastWriteTime = DateTime.MinValue;
+        private readonly Random _random = new Random();
+        
         public JsonLogger(IPathProvider paths)
         {
             _logDir = paths.GetLogDir();
             _statusDir = paths.GetStatusDir();
+            _statusFilePath = Path.Combine(_statusDir, "status.json");
             
             // Ensure directories exist
             Directory.CreateDirectory(_logDir);
@@ -25,6 +31,13 @@ namespace Projet.Infrastructure
             
             // Initialize status file if it doesn't exist
             InitializeStatusFile();
+            
+            // Configurer un timer pour l'écriture périodique des statuts (beaucoup plus fréquent)
+            _flushTimer = new System.Timers.Timer(16); // 60fps pour une expérience ultra-fluide
+            _flushTimer.Elapsed += (s, e) => FlushStatusCache();
+            _flushTimer.Start();
+            
+            Console.WriteLine("JsonLogger initialized with 16ms flush interval (60 FPS updates)");
         }
 
         public void LogEvent(LogEntry entry)
@@ -46,147 +59,106 @@ namespace Projet.Infrastructure
         public void UpdateStatus(StatusEntry entry)
         {
             if (entry == null || string.IsNullOrWhiteSpace(entry.Name))
-            {
-                return; // Ignore invalid entries
-            }
+                return;
 
-            // Set timestamp to now
-            entry.Timestamp = DateTime.Now;
+            // Make sure timestamp is set
+            if (entry.Timestamp == default)
+                entry.Timestamp = DateTime.Now;
             
-            // Ensure progression is within bounds
+            // Ensure values are valid
+            entry.TotalFilesToCopy = Math.Max(0, entry.TotalFilesToCopy);
+            entry.NbFilesLeftToDo = Math.Max(0, entry.NbFilesLeftToDo);
             entry.Progression = Math.Min(100, Math.Max(0, entry.Progression));
             
-            string path = Path.Combine(_statusDir, "status.json");
-            int retries = 0;
-            bool success = false;
+            // Ajouter une micro-variation pour forcer le rafraîchissement visuel
+            // comme avec pause/resume
+            if (entry.State == "ACTIVE" || entry.State == "PENDING" || entry.State == "PAUSED")
+            {
+                // Ajouter une micro-variation à la progression (même technique que pause/resume)
+                double microVariation = _random.NextDouble() * 0.001;
+                entry.Progression += microVariation;
+            }
             
-            while (!success && retries < _maxRetries)
+            // CHANGEMENT CRITIQUE: Nous voulons maintenant écrire IMMÉDIATEMENT dans le fichier
+            // à chaque mise à jour, exactement comme ce qui se passe lors d'une transition pause/resume
+            
+            try
+            {
+                lock (_writeLock)
+                {
+                    // Mettre à jour le cache
+                    _statusCache[entry.Name] = entry;
+                    
+                    // Convertir tous les statuts en liste
+                    var allEntries = new List<StatusEntry>(_statusCache.Values);
+                    
+                    // Sérialiser en JSON
+                    string json = JsonSerializer.Serialize(allEntries, new JsonSerializerOptions 
+                    { 
+                        WriteIndented = false // Compact pour des écritures plus rapides
+                    });
+                    
+                    // ÉCRIRE IMMÉDIATEMENT dans le fichier
+                    File.WriteAllText(_statusFilePath, json);
+                    _lastWriteTime = DateTime.Now;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error writing status file: {ex.Message}");
+            }
+        }
+        
+        private void FlushStatusCache()
+        {
+            bool needsFlush = false;
+            List<StatusEntry> entriesToWrite = null;
+            
+            lock (_writeLock)
+            {
+                if (_statusCacheDirty && _statusCache.Count > 0)
+                {
+                    needsFlush = true;
+                    entriesToWrite = new List<StatusEntry>(_statusCache.Values);
+                    _statusCacheDirty = false;
+                }
+            }
+            
+            if (needsFlush && entriesToWrite != null)
             {
                 try
                 {
-                    // Use a lock to prevent concurrent access from the same process
-                    lock (_statusLock)
-                    {
-                        // Load existing entries
-                        List<StatusEntry> list = LoadStatusEntries(path);
-                        
-                        // Update or add the entry
-                        int idx = list.FindIndex(s => string.Equals(s.Name, entry.Name, StringComparison.OrdinalIgnoreCase));
-                        if (idx >= 0)
-                        {
-                            // Update existing entry
-                            list[idx] = entry;
-                            Console.WriteLine($"Updated status for job '{entry.Name}': State={entry.State}, Progress={entry.Progression:F2}%");
-                        }
-                        else
-                        {
-                            // Add new entry
-                            list.Add(entry);
-                            Console.WriteLine($"Added new status for job '{entry.Name}': State={entry.State}, Progress={entry.Progression:F2}%");
-                        }
-
-                        // Write updated list to file
-                        SaveStatusEntries(path, list);
-                    }
+                    // Sérialiser les données
+                    string json = JsonSerializer.Serialize(entriesToWrite, new JsonSerializerOptions 
+                    { 
+                        WriteIndented = false // Plus compact pour des écritures plus rapides
+                    });
                     
-                    success = true;
-                }
-                catch (IOException ex)
-                {
-                    // File might be locked by another process
-                    retries++;
-                    Console.WriteLine($"Status file locked, retry {retries}/{_maxRetries}: {ex.Message}");
-                    Thread.Sleep(_retryDelayMs);
+                    // Écrire dans le fichier
+                    File.WriteAllText(_statusFilePath, json);
+                    _lastWriteTime = DateTime.Now;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error updating status: {ex.Message}");
+                    Console.WriteLine($"Error writing status file: {ex.Message}");
                     
-                    // Try a fallback approach for the last retry
-                    if (retries == _maxRetries - 1)
+                    // Remarquer comme sale pour réessayer
+                    lock (_writeLock)
                     {
-                        try
-                        {
-                            // Create a temporary file with just this entry
-                            string tempPath = Path.Combine(_statusDir, $"status_{entry.Name}_{Guid.NewGuid()}.json");
-                            SaveStatusEntries(tempPath, new List<StatusEntry> { entry });
-                            
-                            // Try to merge it later
-                            Console.WriteLine($"Created temporary status file: {tempPath}");
-                        }
-                        catch
-                        {
-                            // Ignore errors in fallback
-                        }
+                        _statusCacheDirty = true;
                     }
-                    
-                    retries++;
-                    Thread.Sleep(_retryDelayMs);
                 }
-            }
-            
-            if (!success)
-            {
-                Console.WriteLine($"Failed to update status for job '{entry.Name}' after {_maxRetries} attempts");
-            }
-        }
-
-        private List<StatusEntry> LoadStatusEntries(string path)
-        {
-            List<StatusEntry> list = new List<StatusEntry>();
-            
-            if (!File.Exists(path))
-                return list;
-                
-            try
-            {
-                string json = File.ReadAllText(path);
-                if (!string.IsNullOrWhiteSpace(json))
-                {
-                    list = JsonSerializer.Deserialize<List<StatusEntry>>(json) ?? new List<StatusEntry>();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading status entries: {ex.Message}");
-            }
-            
-            return list;
-        }
-        
-        private void SaveStatusEntries(string path, List<StatusEntry> entries)
-        {
-            try
-            {
-                string json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
-                
-                // Write to a temporary file first
-                string tempFile = path + ".tmp";
-                File.WriteAllText(tempFile, json);
-                
-                // Then move it to the destination (atomic operation)
-                if (File.Exists(path))
-                    File.Delete(path);
-                    
-                File.Move(tempFile, path);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error saving status entries: {ex.Message}");
-                throw;
             }
         }
 
         private void InitializeStatusFile()
         {
-            string path = Path.Combine(_statusDir, "status.json");
-            
-            if (!File.Exists(path))
+            if (!File.Exists(_statusFilePath))
             {
                 try
                 {
-                    // Create an empty status file
-                    SaveStatusEntries(path, new List<StatusEntry>());
+                    // Créer un fichier de statut vide
+                    File.WriteAllText(_statusFilePath, "[]");
                     Console.WriteLine("Initialized empty status file");
                 }
                 catch (Exception ex)
@@ -218,7 +190,7 @@ namespace Projet.Infrastructure
                     {
                         // File might be in use, retry after a short delay
                         retries++;
-                        Thread.Sleep(50);
+                        Thread.Sleep(5);
                     }
                 }
             }
@@ -226,6 +198,15 @@ namespace Projet.Infrastructure
             {
                 Console.WriteLine($"Error appending JSON: {ex.Message}");
             }
+        }
+
+        public void Dispose()
+        {
+            // Ensure any pending changes are written
+            FlushStatusCache();
+            
+            _flushTimer?.Stop();
+            _flushTimer?.Dispose();
         }
     }
 }
