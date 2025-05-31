@@ -4,53 +4,67 @@ using System.Text;
 
 namespace Projet.Infrastructure
 {
+    /// <summary>
+    /// Represents the status of a backup job
+    /// </summary>
     public class StatusEntry
     {
-        public string Name { get; set; } = "";
+        // Job identification
+        public string Name { get; set; }
+        
+        // State information
+        public string State { get; set; } = "READY"; // READY, ACTIVE, PAUSED, END, ERROR, CANCELLED
+        
+        // File information
         public string SourceFilePath { get; set; } = "";
         public string TargetFilePath { get; set; } = "";
-        public string State { get; set; } = "";  
-        public int TotalFilesToCopy { get; set; }
-        public long TotalFilesSize { get; set; }
-        public int NbFilesLeftToDo { get; set; }
-        public double Progression { get; set; }        
+        
+        // Progress information
+        public int TotalFilesToCopy { get; set; } = 0;
+        public long TotalFilesSize { get; set; } = 0;
+        public int NbFilesLeftToDo { get; set; } = 0;
+        public double Progression { get; set; } = 0; // 0-100
+        
+        // Error information
         public string ErrorMessage { get; set; } = "";
         
-        // Memory allocation information
-        public int BufferSize { get; set; }
-        public int ActiveJobs { get; set; }
-        public double MemoryPercentage { get; set; }
-
-        public StatusEntry() { }   
-
-        public StatusEntry(string name, string src, string dst, string state,
-                           int totalFiles, long totalSize, int left, double progression)
+        // Resource allocation information
+        public int BufferSize { get; set; } = 0;
+        public int ActiveJobs { get; set; } = 0;
+        public double MemoryPercentage { get; set; } = 0;
+        
+        // Timestamp
+        public DateTime Timestamp { get; set; } = DateTime.Now;
+        
+        // Default constructor
+        public StatusEntry()
         {
-            Name = name;
-            SourceFilePath = src;
-            TargetFilePath = dst;
-            State = state;
-            TotalFilesToCopy = totalFiles;
-            TotalFilesSize = totalSize;
-            NbFilesLeftToDo = left;
-            Progression = progression;
         }
         
-        public StatusEntry(string name, string src, string dst, string state,
-                           int totalFiles, long totalSize, int left, double progression,
-                           string errorMessage) : this(name, src, dst, state, totalFiles, totalSize, left, progression)
+        // Copy constructor
+        public StatusEntry(StatusEntry other)
         {
-            ErrorMessage = errorMessage;
+            if (other != null)
+            {
+                Name = other.Name;
+                State = other.State;
+                SourceFilePath = other.SourceFilePath;
+                TargetFilePath = other.TargetFilePath;
+                TotalFilesToCopy = other.TotalFilesToCopy;
+                TotalFilesSize = other.TotalFilesSize;
+                NbFilesLeftToDo = other.NbFilesLeftToDo;
+                Progression = other.Progression;
+                ErrorMessage = other.ErrorMessage;
+                BufferSize = other.BufferSize;
+                ActiveJobs = other.ActiveJobs;
+                MemoryPercentage = other.MemoryPercentage;
+                Timestamp = other.Timestamp;
+            }
         }
         
-        public StatusEntry(string name, string src, string dst, string state,
-                           int totalFiles, long totalSize, int left, double progression,
-                           int bufferSize, int activeJobs, double memoryPercentage) 
-            : this(name, src, dst, state, totalFiles, totalSize, left, progression)
+        public override string ToString()
         {
-            BufferSize = bufferSize;
-            ActiveJobs = activeJobs;
-            MemoryPercentage = memoryPercentage;
+            return $"{Name}: {State} - {Progression:F2}% ({NbFilesLeftToDo}/{TotalFilesToCopy} files remaining)";
         }
     }
 }

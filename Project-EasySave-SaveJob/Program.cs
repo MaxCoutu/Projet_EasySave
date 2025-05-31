@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using Projet.Infrastructure;
 using Projet.Model;
 using Projet.Service;
@@ -10,8 +11,23 @@ namespace Projet
 {
     internal class Program
     {
-        private static void Main()
+        private static async Task Main()
         {
+            Console.WriteLine("EasySave Backup System");
+            Console.WriteLine("1. Start normal application");
+            Console.WriteLine("2. Run parallel backup test");
+            Console.Write("Choose an option (1-2): ");
+            
+            string option = Console.ReadLine()?.Trim();
+            
+            if (option == "2")
+            {
+                // Run the parallel backup test
+                await ParallelBackupTest.RunTest();
+                return;
+            }
+            
+            // Continue with normal application startup
             Console.Write("Choose language (en/fr) [en] : ");
             string code = Console.ReadLine()?.Trim().ToLower();
             if (code != "fr") code = "en";

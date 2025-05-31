@@ -1,241 +1,210 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Projet.Infrastructure
 {
     /// <summary>
-    /// Manages dynamic memory allocation for backup jobs based on the number of active jobs
+    /// Manages memory allocation for backup jobs
     /// </summary>
     public class MemoryAllocationManager
     {
         // Singleton instance
-        private static readonly Lazy<MemoryAllocationManager> _instance = new Lazy<MemoryAllocationManager>(() => new MemoryAllocationManager());
+        private static readonly Lazy<MemoryAllocationManager> _instance = 
+            new Lazy<MemoryAllocationManager>(() => new MemoryAllocationManager());
         
-        // Default buffer size for file copies (can be adjusted based on memory allocation)
-        private const int DefaultBufferSize = 81920;
-        
-        // Maximum memory allocation per job in bytes (80MB default)
-        private const long MaxMemoryPerJob = 83886080;
-        
-        // Lock for thread safety when updating allocations
-        private readonly object _allocationLock = new object();
-        
-        // Track active jobs and their memory allocations
-        private readonly ConcurrentDictionary<string, long> _activeJobs = new ConcurrentDictionary<string, long>();
-        
-        // Public singleton accessor
         public static MemoryAllocationManager Instance => _instance.Value;
         
+        // Default buffer sizes in bytes
+        private const int DEFAULT_BUFFER_SIZE = 4 * 1024 * 1024; // 4MB
+        private const int MIN_BUFFER_SIZE = 64 * 1024; // 64KB
+        private const int MAX_BUFFER_SIZE = 16 * 1024 * 1024; // 16MB
+        
+        // Dictionary to track active jobs and their memory allocations
+        private readonly Dictionary<string, JobMemoryInfo> _activeJobs = new Dictionary<string, JobMemoryInfo>();
+        private readonly object _lock = new object();
+        
+        // Constructor (private for singleton)
         private MemoryAllocationManager()
         {
             Console.WriteLine("MemoryAllocationManager initialized");
         }
         
         /// <summary>
-        /// Registers a job as active and recalculates memory allocations for all jobs
+        /// Register a job with the memory manager
         /// </summary>
-        /// <param name="jobName">Name of the job to register</param>
-        /// <returns>Buffer size allocated for this job</returns>
-        public int RegisterJob(string jobName)
+        public void RegisterJob(string jobName)
         {
-            Console.WriteLine($">>> Registering job '{jobName}' for memory allocation");
-            
-            lock (_allocationLock)
+            if (string.IsNullOrEmpty(jobName))
+                throw new ArgumentNullException(nameof(jobName));
+                
+            lock (_lock)
             {
-                // Add job if not already present
-                if (_activeJobs.TryAdd(jobName, 0))
+                if (_activeJobs.ContainsKey(jobName))
                 {
-                    Console.WriteLine($">>> Job '{jobName}' added to active jobs list");
-                }
-                else
-                {
-                    Console.WriteLine($">>> Job '{jobName}' was already registered");
+                    Console.WriteLine($"Job {jobName} is already registered");
+                    return;
                 }
                 
-                // Recalculate allocations for all jobs
-                RecalculateAllocations();
+                // Calculate initial buffer size based on active job count
+                int bufferSize = CalculateBufferSize(_activeJobs.Count + 1);
                 
-                // Return the buffer size for this job
-                int bufferSize = CalculateBufferSize(_activeJobs[jobName]);
-                Console.WriteLine($">>> Allocated buffer size for '{jobName}': {bufferSize} bytes");
-                return bufferSize;
+                _activeJobs[jobName] = new JobMemoryInfo
+                {
+                    BufferSize = bufferSize,
+                    StartTime = DateTime.Now
+                };
+                
+                Console.WriteLine($"Registered job: {jobName}, Buffer size: {bufferSize} bytes, Active jobs: {_activeJobs.Count}");
+                
+                // Recalculate buffer sizes for all jobs
+                RecalculateBufferSizes();
             }
         }
         
         /// <summary>
-        /// Unregisters a job when it completes and recalculates memory allocations
+        /// Unregister a job from the memory manager
         /// </summary>
-        /// <param name="jobName">Name of the job to unregister</param>
         public void UnregisterJob(string jobName)
         {
-            Console.WriteLine($">>> Unregistering job '{jobName}' from memory allocation");
-            
-            lock (_allocationLock)
-            {
-                // Remove the job
-                if (_activeJobs.TryRemove(jobName, out _))
-                {
-                    Console.WriteLine($">>> Job '{jobName}' removed from active jobs list");
-                }
-                else
-                {
-                    Console.WriteLine($">>> Job '{jobName}' was not registered");
-                }
+            if (string.IsNullOrEmpty(jobName))
+                return;
                 
-                // Recalculate allocations for remaining jobs
-                if (_activeJobs.Count > 0)
+            lock (_lock)
+            {
+                if (_activeJobs.Remove(jobName))
                 {
-                    RecalculateAllocations();
-                }
-                else
-                {
-                    Console.WriteLine(">>> No active jobs remain");
+                    Console.WriteLine($"Unregistered job: {jobName}, Active jobs remaining: {_activeJobs.Count}");
+                    
+                    // Recalculate buffer sizes for remaining jobs
+                    RecalculateBufferSizes();
                 }
             }
         }
         
         /// <summary>
-        /// Gets the current buffer size for a specific job
+        /// Get the current buffer size for a job
         /// </summary>
-        /// <param name="jobName">Name of the job</param>
-        /// <returns>Buffer size in bytes</returns>
         public int GetBufferSize(string jobName)
         {
             if (string.IsNullOrEmpty(jobName))
+                return DEFAULT_BUFFER_SIZE;
+                
+            lock (_lock)
             {
-                Console.WriteLine(">>> WARNING: Attempted to get buffer size for a null or empty job name");
-                return DefaultBufferSize;
+                if (_activeJobs.TryGetValue(jobName, out var info))
+                {
+                    return info.BufferSize;
+                }
+                
+                return DEFAULT_BUFFER_SIZE;
             }
-
-            if (_activeJobs.TryGetValue(jobName, out long allocation))
-            {
-                int bufferSize = CalculateBufferSize(allocation);
-                Console.WriteLine($">>> Getting buffer size for '{jobName}': {bufferSize} bytes");
-                return bufferSize;
-            }
-            
-            // If job is not registered, register it now
-            Console.WriteLine($">>> Job '{jobName}' not found when getting buffer size, registering it now");
-            return RegisterJob(jobName);
         }
         
         /// <summary>
-        /// Gets the current count of active jobs
+        /// Get the number of active jobs
         /// </summary>
-        /// <returns>Number of active jobs</returns>
         public int GetActiveJobCount()
         {
-            int count = _activeJobs.Count;
-            Console.WriteLine($">>> Current active job count: {count}");
-            return count;
+            lock (_lock)
+            {
+                return _activeJobs.Count;
+            }
         }
         
         /// <summary>
-        /// Gets the memory percentage allocated to a specific job
+        /// Get the memory percentage allocated to a job (out of total available)
         /// </summary>
-        /// <param name="jobName">Name of the job</param>
-        /// <returns>Memory percentage (0-100)</returns>
         public double GetMemoryPercentage(string jobName)
         {
-            if (_activeJobs.Count == 0)
+            if (string.IsNullOrEmpty(jobName))
                 return 0;
                 
-            if (_activeJobs.TryGetValue(jobName, out long allocation))
+            lock (_lock)
             {
-                // Calculate percentage of total memory
-                double percentage = (double)allocation / MaxMemoryPerJob * 100;
-                Console.WriteLine($">>> Memory percentage for '{jobName}': {percentage:F1}%");
-                return percentage;
-            }
-            
-            Console.WriteLine($">>> Job '{jobName}' not found when getting memory percentage");
-            return 0;
-        }
-        
-        /// <summary>
-        /// Dumps the current state of all jobs and their allocations
-        /// </summary>
-        public void DumpState()
-        {
-            Console.WriteLine(">>> ======== MEMORY ALLOCATION STATE ========");
-            Console.WriteLine($">>> Total active jobs: {_activeJobs.Count}");
-            
-            if (_activeJobs.Count > 0)
-            {
-                Console.WriteLine(">>> Active jobs:");
-                foreach (var job in _activeJobs)
+                if (_activeJobs.Count == 0)
+                    return 0;
+                    
+                if (_activeJobs.TryGetValue(jobName, out var info))
                 {
-                    double percentage = (double)job.Value / MaxMemoryPerJob * 100;
-                    int bufferSize = CalculateBufferSize(job.Value);
-                    Console.WriteLine($">>>   - {job.Key}: {job.Value} bytes ({percentage:F1}%), buffer: {bufferSize} bytes");
+                    long totalBufferSize = _activeJobs.Values.Sum(j => j.BufferSize);
+                    if (totalBufferSize > 0)
+                    {
+                        return (double)info.BufferSize / totalBufferSize * 100;
+                    }
                 }
+                
+                return 0;
             }
-            
-            Console.WriteLine(">>> ========================================");
         }
         
         /// <summary>
-        /// Recalculates memory allocations for all active jobs, dividing available memory equally
+        /// Calculate an appropriate buffer size based on the number of active jobs
         /// </summary>
-        private void RecalculateAllocations()
+        private int CalculateBufferSize(int jobCount)
         {
-            int jobCount = _activeJobs.Count;
+            if (jobCount <= 0)
+                return DEFAULT_BUFFER_SIZE;
+                
+            // Start with default buffer size
+            int bufferSize = DEFAULT_BUFFER_SIZE;
             
-            if (jobCount == 0) return;
-            
-            // Calculate per-job allocation
-            long totalAvailableMemory = Math.Max(MaxMemoryPerJob, Environment.SystemPageSize * 1024); // Au moins 4 MB
-            
-            // Calculer la mémoire totale disponible en fonction du nombre de processeurs
-            int procCount = Environment.ProcessorCount;
-            totalAvailableMemory = Math.Min(
-                MaxMemoryPerJob * Math.Max(1, procCount / 2), // Utiliser la moitié des processeurs disponibles
-                totalAvailableMemory * jobCount * 2            // Mais pas plus du double par job
-            );
-            
-            long memoryPerJob = totalAvailableMemory / jobCount;
-            
-            // Set a minimum allocation to ensure jobs have enough memory
-            const long minimumAllocation = 4 * 1024 * 1024; // 4 MB minimum
-            
-            if (memoryPerJob < minimumAllocation)
+            // Adjust based on job count
+            if (jobCount == 1)
             {
-                Console.WriteLine($">>> WARNING: Calculated memory per job ({memoryPerJob} bytes) is below minimum threshold. Using {minimumAllocation} bytes per job instead.");
-                memoryPerJob = minimumAllocation;
+                // Single job gets maximum buffer
+                bufferSize = MAX_BUFFER_SIZE;
             }
-            
-            Console.WriteLine($">>> Recalculating memory allocations for {jobCount} active jobs: {memoryPerJob} bytes per job (total: {totalAvailableMemory} bytes)");
-            
-            // Update allocations for all jobs
-            foreach (string jobName in _activeJobs.Keys)
+            else if (jobCount <= 3)
             {
-                // Vérifier si la clé existe toujours (peut avoir été supprimée par un autre thread)
-                if (_activeJobs.ContainsKey(jobName))
-                {
-                    _activeJobs[jobName] = memoryPerJob;
-                    Console.WriteLine($">>>   - Updated allocation for '{jobName}' to {memoryPerJob} bytes");
-                }
+                // 2-3 jobs get medium buffer
+                bufferSize = MAX_BUFFER_SIZE / 2;
             }
-            
-            // Dump the current state
-            DumpState();
-        }
-        
-        /// <summary>
-        /// Calculates the optimal buffer size based on memory allocation
-        /// </summary>
-        /// <param name="allocation">Memory allocation in bytes</param>
-        /// <returns>Buffer size in bytes</returns>
-        private int CalculateBufferSize(long allocation)
-        {
-            // Use a portion of the allocation for buffer size (25%)
-            int bufferSize = (int)Math.Min(int.MaxValue, Math.Max(4096, allocation / 4));
-            
-            // Round to nearest multiple of 4096 (common page size)
-            bufferSize = (bufferSize / 4096) * 4096;
+            else if (jobCount <= 6)
+            {
+                // 4-6 jobs get smaller buffer
+                bufferSize = MAX_BUFFER_SIZE / 4;
+            }
+            else
+            {
+                // 7+ jobs get minimum buffer
+                bufferSize = MIN_BUFFER_SIZE;
+            }
             
             return bufferSize;
+        }
+        
+        /// <summary>
+        /// Recalculate buffer sizes for all active jobs
+        /// </summary>
+        private void RecalculateBufferSizes()
+        {
+            if (_activeJobs.Count == 0)
+                return;
+                
+            int jobCount = _activeJobs.Count;
+            int newBufferSize = CalculateBufferSize(jobCount);
+            
+            foreach (var job in _activeJobs.Keys.ToList())
+            {
+                if (_activeJobs.TryGetValue(job, out var info))
+                {
+                    info.BufferSize = newBufferSize;
+                    _activeJobs[job] = info;
+                }
+            }
+            
+            Console.WriteLine($"Recalculated buffer sizes: {newBufferSize} bytes for {jobCount} jobs");
+        }
+        
+        /// <summary>
+        /// Structure to hold memory information for a job
+        /// </summary>
+        private struct JobMemoryInfo
+        {
+            public int BufferSize;
+            public DateTime StartTime;
         }
     }
 } 

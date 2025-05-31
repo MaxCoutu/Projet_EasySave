@@ -359,48 +359,81 @@ namespace Projet.ViewModel
 
         private void OnStatusUpdated(StatusEntry status)
         {
-            // Handle this on the GUI thread
+            // Handle this on the GUI thread with high priority
             _threadPool.EnqueueGuiTask(async (ct) => {
                 try {
-                    // Refresh the Jobs collection
-                    RefreshJobs();
-                    
-                    // Make sure all jobs in RecentJobs match current jobs
-                    var allJobs = _svc.GetJobs().ToList();
-                    
-                    // Update existing jobs in RecentJobs
-                    for (int i = 0; i < RecentJobs.Count; i++)
+                    // Skip invalid status updates
+                    if (status == null || string.IsNullOrEmpty(status.Name))
                     {
-                        var matchingJob = allJobs.FirstOrDefault(j => j.Name == RecentJobs[i].Name);
-                        if (matchingJob == null)
-                        {
-                            // Job no longer exists, remove it
-                            RecentJobs.RemoveAt(i);
-                            i--;
-                        }
+                        return;
                     }
                     
-                    // Add any missing jobs
-                    foreach (var job in allJobs)
+                    Console.WriteLine($"Status update received: Job={status.Name}, State={status.State}, Progress={status.Progression:F2}%");
+                    
+                    // Find the job in both collections
+                    var jobInJobs = Jobs.FirstOrDefault(j => j.Name == status.Name);
+                    var jobInRecent = RecentJobs.FirstOrDefault(j => j.Name == status.Name);
+                    
+                    // Update the job directly without refreshing the entire collection
+                    if (jobInJobs != null)
                     {
-                        if (!RecentJobs.Any(j => j.Name == job.Name))
+                        // Update state only if it's a valid transition
+                        if (!string.IsNullOrEmpty(status.State))
                         {
-                            RecentJobs.Add(job);
+                            jobInJobs.State = status.State;
                         }
+                        
+                        // Ensure progression is valid (0-100)
+                        jobInJobs.Progression = Math.Min(100, Math.Max(0, status.Progression));
+                        
+                        // Update other properties
+                        jobInJobs.TotalFilesToCopy = status.TotalFilesToCopy;
+                        jobInJobs.TotalFilesSize = status.TotalFilesSize;
+                        jobInJobs.NbFilesLeftToDo = status.NbFilesLeftToDo;
                     }
                     
-                    // Update statuses
-                    UpdateJobStatusInternal();
-                    
-                    // Check for end of backup
-                    if (status.State == "END")
+                    // Also update in RecentJobs
+                    if (jobInRecent != null)
                     {
-                        // If it's the last job, set IsBackupRunning to false
-                        bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING");
-                        if (!anyActive)
+                        // Update state only if it's a valid transition
+                        if (!string.IsNullOrEmpty(status.State))
                         {
+                            jobInRecent.State = status.State;
+                        }
+                        
+                        // Ensure progression is valid (0-100)
+                        jobInRecent.Progression = Math.Min(100, Math.Max(0, status.Progression));
+                        
+                        // Update other properties
+                        jobInRecent.TotalFilesToCopy = status.TotalFilesToCopy;
+                        jobInRecent.TotalFilesSize = status.TotalFilesSize;
+                        jobInRecent.NbFilesLeftToDo = status.NbFilesLeftToDo;
+                    }
+                    
+                    // Notify UI of changes to both collections
+                    OnPropertyChanged(nameof(Jobs));
+                    OnPropertyChanged(nameof(RecentJobs));
+                    
+                    // Handle job completion
+                    if (status.State == "END" || status.State == "CANCELLED" || status.State == "ERROR")
+                    {
+                        Console.WriteLine($"Job {status.Name} completed with state {status.State}");
+                        
+                        // Check if any jobs are still running
+                        bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING" || j.State == "PAUSED");
+                        
+                        // Update IsBackupRunning flag if no jobs are active
+                        if (!anyActive && IsBackupRunning)
+                        {
+                            Console.WriteLine("No active jobs remaining - setting IsBackupRunning to false");
                             IsBackupRunning = false;
                         }
+                    }
+                    else if (status.State == "ACTIVE" && !IsBackupRunning)
+                    {
+                        // If any job becomes active, set IsBackupRunning to true
+                        Console.WriteLine("Job active - setting IsBackupRunning to true");
+                        IsBackupRunning = true;
                     }
                 }
                 catch (Exception ex) {
@@ -625,25 +658,69 @@ namespace Projet.ViewModel
                 try
                 {
                     // Debug: print jobs count
-                    Console.WriteLine($"Updating job status: Jobs.Count={Jobs.Count}, RecentJobs.Count={RecentJobs.Count}");
+                    Console.WriteLine($"Periodic job status update: Jobs.Count={Jobs.Count}, RecentJobs.Count={RecentJobs.Count}");
                     
-                    // Force a refresh of the jobs list first
-                    RefreshJobs();
-                    
-                    // Make sure RecentJobs contains all jobs
+                    // Check if any jobs need to be added/removed from collections
                     var allJobs = _svc.GetJobs().ToList();
-                    Console.WriteLine($"Service jobs count: {allJobs.Count}");
+                    bool collectionChanged = false;
                     
-                    // Clear and reload all jobs
-                    RecentJobs.Clear();
+                    // Add missing jobs to Jobs collection
                     foreach (var job in allJobs)
                     {
-                        RecentJobs.Add(job);
-                        Console.WriteLine($"Added job to RecentJobs: {job.Name}");
+                        if (!Jobs.Any(j => j.Name == job.Name))
+                        {
+                            Jobs.Add(job);
+                            collectionChanged = true;
+                        }
+                        
+                        if (!RecentJobs.Any(j => j.Name == job.Name))
+                        {
+                            RecentJobs.Add(job);
+                            collectionChanged = true;
+                        }
+                    }
+                    
+                    // Remove jobs that no longer exist
+                    for (int i = Jobs.Count - 1; i >= 0; i--)
+                    {
+                        if (!allJobs.Any(j => j.Name == Jobs[i].Name))
+                        {
+                            Jobs.RemoveAt(i);
+                            collectionChanged = true;
+                        }
+                    }
+                    
+                    for (int i = RecentJobs.Count - 1; i >= 0; i--)
+                    {
+                        if (!allJobs.Any(j => j.Name == RecentJobs[i].Name))
+                        {
+                            RecentJobs.RemoveAt(i);
+                            collectionChanged = true;
+                        }
+                    }
+                    
+                    // If collections changed, notify UI
+                    if (collectionChanged)
+                    {
+                        OnPropertyChanged(nameof(Jobs));
+                        OnPropertyChanged(nameof(RecentJobs));
                     }
                     
                     // Update status for all jobs
                     UpdateJobStatusInternal();
+                    
+                    // Check if we need to update IsBackupRunning flag
+                    bool anyActive = Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING" || j.State == "PAUSED");
+                    if (!anyActive && IsBackupRunning)
+                    {
+                        Console.WriteLine("Periodic check: No active jobs - resetting IsBackupRunning flag");
+                        IsBackupRunning = false;
+                    }
+                    else if (anyActive && !IsBackupRunning)
+                    {
+                        Console.WriteLine("Periodic check: Active jobs found - setting IsBackupRunning flag");
+                        IsBackupRunning = true;
+                    }
                 }
                 catch (Exception ex)
                 {

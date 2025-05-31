@@ -59,21 +59,43 @@ namespace Projet.Model
                     long currentBytesCopied = bytesCopied + bytesTransferred;
                     double progress = totalSize > 0 ? (double)currentBytesCopied / totalSize : 1.0;
                     
-                    progressCallback?.Invoke(new StatusEntry(
-                        job.Name, 
-                        src, 
-                        dest, 
-                        "ACTIVE",
-                        totalFiles, 
-                        totalSize, 
-                        totalFiles - filesCopied,
-                        progress * 100.0)); // Convert to percentage (0-100)
+                    // Create status entry with the new format
+                    var status = new StatusEntry
+                    {
+                        Name = job.Name,
+                        SourceFilePath = src,
+                        TargetFilePath = dest,
+                        State = "ACTIVE",
+                        TotalFilesToCopy = totalFiles,
+                        TotalFilesSize = totalSize,
+                        NbFilesLeftToDo = totalFiles - filesCopied,
+                        Progression = progress * 100.0 // Convert to percentage (0-100)
+                    };
+                    
+                    progressCallback?.Invoke(status);
                 });
                 
                 // Update counters after file is complete
                 bytesCopied += fileSize;
                 filesCopied++;
             }
+            
+            // Send one final update to ensure we show 100% completion
+            var finalStatus = new StatusEntry
+            {
+                Name = job.Name,
+                SourceFilePath = string.Empty,
+                TargetFilePath = string.Empty,
+                State = "ACTIVE",
+                TotalFilesToCopy = totalFiles,
+                TotalFilesSize = totalSize,
+                NbFilesLeftToDo = 0,
+                Progression = 100.0 // 100% complete
+            };
+            
+            progressCallback?.Invoke(finalStatus);
+            
+            Console.WriteLine($"Differential Backup completed: {filesCopied} files, {bytesCopied} bytes transferred");
         }
     }
 }

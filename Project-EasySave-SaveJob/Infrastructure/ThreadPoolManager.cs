@@ -47,14 +47,14 @@ namespace Projet.Infrastructure
 
         private ThreadPoolManager()
         {
-            // Calculate the number of CPU cores to use (75% of total)
+            // Calculate the number of CPU cores to use (50% of total)
             int totalCores = Environment.ProcessorCount;
-            int coresToUse = Math.Max(4, (totalCores * 3) / 4); // Utiliser 75% des cœurs, au moins 4
+            int coresToUse = Math.Max(2, totalCores / 2); // Ensure at least 2 cores
 
             // Allocate threads for each category based on percentages
-            _maxConcurrentCopyTasks = Math.Max(Math.Min(16, totalCores), (coresToUse * CopyTasksPercent) / 100); // Limite à 16 threads max pour les copies
-            _maxConcurrentLoggingTasks = Math.Max(2, (coresToUse * LoggingTasksPercent) / 100); // Au moins 2 threads pour le logging
-            _maxConcurrentGuiTasks = Math.Max(2, (coresToUse * GuiTasksPercent) / 100); // Au moins 2 threads pour l'UI
+            _maxConcurrentCopyTasks = Math.Max(2, (coresToUse * CopyTasksPercent) / 100); // Ensure at least 2 threads
+            _maxConcurrentLoggingTasks = Math.Max(1, (coresToUse * LoggingTasksPercent) / 100);
+            _maxConcurrentGuiTasks = Math.Max(1, (coresToUse * GuiTasksPercent) / 100);
 
             // Initialize semaphores to control thread counts
             _copyTasksSemaphore = new SemaphoreSlim(_maxConcurrentCopyTasks);
@@ -77,20 +77,17 @@ namespace Projet.Infrastructure
 
         public void Start()
         {
-            Console.WriteLine(">>> ThreadPoolManager starting task processors");
+            Console.WriteLine("ThreadPoolManager starting task processors");
             
             // Create task processor for each category
             Task.Run(() => ProcessTaskQueue(_copyTasks, _copyTasksSemaphore, "Copy"));
             Task.Run(() => ProcessTaskQueue(_loggingTasks, _loggingTasksSemaphore, "Logging"));
             Task.Run(() => ProcessTaskQueue(_guiTasks, _guiTasksSemaphore, "GUI"));
-            
-            // Start a monitoring task
-            Task.Run(async () => await MonitorTaskQueuesAsync());
         }
 
         public void Stop()
         {
-            Console.WriteLine(">>> ThreadPoolManager stopping, cancelling all tasks");
+            Console.WriteLine("ThreadPoolManager stopping, cancelling all tasks");
             _cancellationSource.Cancel();
             _cancellationSource = new CancellationTokenSource();
         }
@@ -99,48 +96,25 @@ namespace Projet.Infrastructure
         {
             var tcs = new TaskCompletionSource<bool>();
             
-            // Increment queued count
-            Interlocked.Increment(ref _copyTasksQueued);
-            
             _copyTasks.Enqueue(async (cancellationToken) => 
             {
                 try 
                 {
-                    Console.WriteLine(">>> Starting copy task");
                     await task(cancellationToken);
-                    Console.WriteLine(">>> Copy task completed successfully");
                     tcs.TrySetResult(true);
-                }
-                catch (OperationCanceledException ex) 
-                {
-                    Console.WriteLine($">>> Copy task was cancelled: {ex.Message}");
-                    tcs.TrySetCanceled();
                 }
                 catch (Exception ex) 
                 {
-                    Console.WriteLine($">>> Error in copy task: {ex.Message}");
-                    Console.WriteLine($">>> Stack trace: {ex.StackTrace}");
-                    
-                    // Même en cas d'erreur, on considère la tâche comme terminée
-                    // pour éviter le blocage des autres tâches
                     tcs.TrySetException(ex);
-                }
-                finally
-                {
-                    Interlocked.Increment(ref _copyTasksProcessed);
                 }
             });
             
-            Console.WriteLine($">>> Copy task enqueued (queued: {_copyTasksQueued}, processed: {_copyTasksProcessed})");
             return tcs.Task;
         }
 
         public Task EnqueueLoggingTask(Func<CancellationToken, Task> task)
         {
             var tcs = new TaskCompletionSource<bool>();
-            
-            // Increment queued count
-            Interlocked.Increment(ref _loggingTasksQueued);
             
             _loggingTasks.Enqueue(async (cancellationToken) => 
             {
@@ -151,25 +125,16 @@ namespace Projet.Infrastructure
                 }
                 catch (Exception ex) 
                 {
-                    Console.WriteLine($">>> Error in logging task: {ex.Message}");
                     tcs.TrySetException(ex);
-                }
-                finally
-                {
-                    Interlocked.Increment(ref _loggingTasksProcessed);
                 }
             });
             
-            Console.WriteLine($">>> Logging task enqueued (queued: {_loggingTasksQueued}, processed: {_loggingTasksProcessed})");
             return tcs.Task;
         }
 
         public Task EnqueueGuiTask(Func<CancellationToken, Task> task)
         {
             var tcs = new TaskCompletionSource<bool>();
-            
-            // Increment queued count
-            Interlocked.Increment(ref _guiTasksQueued);
             
             _guiTasks.Enqueue(async (cancellationToken) => 
             {
@@ -180,16 +145,10 @@ namespace Projet.Infrastructure
                 }
                 catch (Exception ex) 
                 {
-                    Console.WriteLine($">>> Error in GUI task: {ex.Message}");
                     tcs.TrySetException(ex);
-                }
-                finally
-                {
-                    Interlocked.Increment(ref _guiTasksProcessed);
                 }
             });
             
-            Console.WriteLine($">>> GUI task enqueued (queued: {_guiTasksQueued}, processed: {_guiTasksProcessed})");
             return tcs.Task;
         }
 
@@ -305,65 +264,38 @@ namespace Projet.Infrastructure
             SemaphoreSlim semaphore, 
             string queueName)
         {
-            Console.WriteLine($">>> Starting task processor for {queueName} queue");
+            Console.WriteLine($"Starting task processor for {queueName} queue");
             
             while (!_cancellationSource.Token.IsCancellationRequested)
             {
                 if (taskQueue.TryDequeue(out var taskToProcess))
                 {
-                    Console.WriteLine($">>> Dequeued {queueName} task, waiting for semaphore");
-                    
-                    try 
+                    await semaphore.WaitAsync(_cancellationSource.Token);
+                    try
                     {
-                        // Utiliser WaitAsync au lieu de WaitAsync avec un délai pour empêcher le timeout
-                        await semaphore.WaitAsync(_cancellationSource.Token);
-                        Console.WriteLine($">>> Acquired semaphore for {queueName} task, executing");
-                        
-                        try
-                        {
-                            await taskToProcess(_cancellationSource.Token);
-                            Console.WriteLine($">>> {queueName} task completed successfully");
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            Console.WriteLine($">>> {queueName} task was cancelled");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($">>> Error in {queueName} task: {ex.Message}");
-                            Console.WriteLine($">>> Stack trace: {ex.StackTrace}");
-                        }
-                        finally
-                        {
-                            semaphore.Release();
-                            Console.WriteLine($">>> Released semaphore for {queueName} task");
-                        }
+                        await taskToProcess(_cancellationSource.Token);
                     }
                     catch (OperationCanceledException)
                     {
-                        Console.WriteLine($">>> Waiting for semaphore was cancelled for {queueName} task");
+                        Console.WriteLine($"{queueName} task was cancelled");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($">>> Error waiting for semaphore in {queueName} queue: {ex.Message}");
-                        Console.WriteLine($">>> Stack trace: {ex.StackTrace}");
+                        Console.WriteLine($"Error in {queueName} task: {ex.Message}");
+                    }
+                    finally
+                    {
+                        semaphore.Release();
                     }
                 }
                 else
                 {
                     // No tasks in queue, wait a bit before checking again
-                    try 
-                    {
-                        await Task.Delay(50, _cancellationSource.Token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // Ignorer l'exception si la tâche est annulée pendant le délai
-                    }
+                    await Task.Delay(50, _cancellationSource.Token);
                 }
             }
             
-            Console.WriteLine($">>> Task processor for {queueName} queue is shutting down");
+            Console.WriteLine($"Task processor for {queueName} queue is shutting down");
         }
     }
 }
