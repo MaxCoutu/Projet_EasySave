@@ -12,9 +12,18 @@ namespace WpfApp
         public static IPathProvider PathProvider { get; private set; }
         public static IBackupService BackupService { get; private set; }
         public static ILanguageService LanguageService { get; private set; }
+        private SingleInstanceManager _singleInstanceManager;
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            _singleInstanceManager = new SingleInstanceManager();
+            if (!_singleInstanceManager.IsFirstInstance())
+            {
+                MessageBox.Show("An instance of EasySave is already running.", "EasySave", MessageBoxButton.OK, MessageBoxImage.Information);
+                Shutdown();
+                return;
+            }
+
             base.OnStartup(e);
 
             PathProvider = new DefaultPathProvider();
@@ -28,6 +37,12 @@ namespace WpfApp
             Directory.CreateDirectory(Path.Combine(baseDir, "Languages"));
             string en = Path.Combine(baseDir, "Languages", "en.json");
             LanguageService = new JsonLanguageService(en);
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _singleInstanceManager?.Dispose();
+            base.OnExit(e);
         }
     }
 }
