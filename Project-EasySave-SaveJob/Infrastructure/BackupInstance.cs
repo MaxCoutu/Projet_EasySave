@@ -48,6 +48,12 @@ namespace Projet.Infrastructure
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _memoryManager = MemoryAllocationManager.Instance;
             
+            // Ensure the job has a reference to settings
+            if (job.Settings == null)
+            {
+                job.Settings = settings;
+            }
+            
             // Configurer un timer pour forcer des mises à jour de statut régulières
             // Exactement comme le font les actions pause/resume
             _progressUpdateTimer = new System.Timers.Timer(50); // Intervalle très court (50ms)
@@ -82,6 +88,12 @@ namespace Projet.Infrastructure
             State = "PENDING";
             Progress = 0;
             _startTime = DateTime.Now;
+            
+            // Log priority file information if available
+            if (Job.Settings?.PriorityExtensions?.Count > 0)
+            {
+                Console.WriteLine($"Priority file extensions for job {Name}: {string.Join(", ", Job.Settings.PriorityExtensions)}");
+            }
             
             // Configurer le timer de mise à jour de progression avec un intervalle plus court (30ms)
             _progressUpdateTimer = new System.Timers.Timer(30);
@@ -210,12 +222,43 @@ namespace Projet.Infrastructure
             var files = Directory.EnumerateFiles(cleanedSourceDir, "*", SearchOption.AllDirectories).ToList();
             
             // Create source/destination pairs
-            var sourceFiles = new List<(string src, string dest)>();
+            var sourceFiles = new List<(string src, string dest, bool isPriority)>();
             foreach (string src in files)
             {
                 string rel = Path.GetRelativePath(cleanedSourceDir, src);
                 string dest = Path.Combine(cleanedTargetDir, rel);
-                sourceFiles.Add((src, dest));
+                
+                // Check if this is a priority file
+                bool isPriority = false;
+                if (Job.Settings != null && Job.Settings.PriorityExtensions.Count > 0)
+                {
+                    string extension = Path.GetExtension(src).ToLower();
+                    isPriority = Job.Settings.PriorityExtensions.Contains(extension);
+                }
+                
+                sourceFiles.Add((src, dest, isPriority));
+            }
+            
+            // Sort files: priority files first, then non-priority files
+            sourceFiles = sourceFiles
+                .OrderByDescending(f => f.isPriority) // Priority files first
+                .ToList();
+                
+            // Count priority files for reporting
+            int priorityFileCount = sourceFiles.Count(f => f.isPriority);
+            
+            // Log priority file information
+            if (priorityFileCount > 0)
+            {
+                Console.WriteLine($"Found {priorityFileCount} priority files out of {sourceFiles.Count} total files");
+                
+                // Print first few priority files for debugging
+                var priorityFileSamples = sourceFiles
+                    .Where(f => f.isPriority)
+                    .Take(5)
+                    .Select(f => Path.GetFileName(f.src));
+                    
+                Console.WriteLine($"Priority files (sample): {string.Join(", ", priorityFileSamples)}");
             }
             
             // Update progress information
@@ -259,7 +302,7 @@ namespace Projet.Infrastructure
                     }
                 }
                 
-                foreach (var (src, dest) in sourceFiles)
+                foreach (var (src, dest, isPriority) in sourceFiles)
                 {
                     // Check for cancellation
                     cancellationToken.ThrowIfCancellationRequested();
@@ -504,6 +547,28 @@ namespace Projet.Infrastructure
             // TOUJOURS mettre à jour l'horodatage pour forcer une détection de changement
             _lastStatusUpdate = DateTime.Now;
             
+            // Check if current file is a priority file
+            bool isPriorityFile = false;
+            if (!string.IsNullOrEmpty(sourcePath) && Job.Settings?.PriorityExtensions != null)
+            {
+                string extension = Path.GetExtension(sourcePath).ToLower();
+                isPriorityFile = Job.Settings.PriorityExtensions.Contains(extension);
+            }
+            
+            // Count priority files in the job
+            int priorityFileCount = 0;
+            if (Job.Settings?.PriorityExtensions != null && Job.Settings.PriorityExtensions.Count > 0)
+            {
+                // Try to calculate from our known files if possible
+                if (sourcePath == string.Empty && targetPath == string.Empty)
+                {
+                    // This is a status update without a specific file, just use the known count
+                    var filesToProcess = Directory.EnumerateFiles(Job.SourceDir, "*", SearchOption.AllDirectories);
+                    priorityFileCount = filesToProcess.Count(f => 
+                        Job.Settings.PriorityExtensions.Contains(Path.GetExtension(f).ToLower()));
+                }
+            }
+            
             var status = new StatusEntry
             {
                 Name = Name,
@@ -515,6 +580,9 @@ namespace Projet.Infrastructure
                 NbFilesLeftToDo = FilesRemaining,
                 Progression = progressValue,
                 ErrorMessage = errorMessage,
+                // Add priority information
+                IsPriorityFile = isPriorityFile,
+                PriorityFilesToCopy = priorityFileCount,
                 // Ajouter un timestamp unique à chaque fois pour forcer la détection de changement
                 Timestamp = DateTime.Now 
             };
@@ -524,6 +592,12 @@ namespace Projet.Infrastructure
             
             // Notify subscribers
             StatusUpdated?.Invoke(status);
+            
+            // Log some extra info about priority files in the console
+            if (!string.IsNullOrEmpty(sourcePath) && isPriorityFile)
+            {
+                Console.WriteLine($"[PRIORITY] Processing priority file: {Path.GetFileName(sourcePath)}");
+            }
         }
     }
 } 

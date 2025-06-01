@@ -200,6 +200,9 @@ namespace Projet.Service
                     return existingInstance;
                 }
                 
+                // Ensure job has access to settings
+                job.Settings = _settings;
+                
                 // Create a new instance
                 var instance = new BackupInstance(job, _logger, _settings);
                 
