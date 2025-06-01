@@ -22,6 +22,7 @@ using WpfApp;
 namespace Client
 {
 
+
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _vm;
@@ -47,6 +48,9 @@ namespace Client
                     Jobs.Add(job);
             });
         }
+        /// <summary>
+        ///     
+
 
         private void ControlButton_Click(object sender, RoutedEventArgs e)
         {

@@ -61,4 +61,9 @@ public class BackupSocketServer
 
         return JsonSerializer.Deserialize<List<StatusEntry>>(json) ?? new List<StatusEntry>();
     }
+    public void Stop()
+    {
+        _listener.Stop();
+    }
+
 }
