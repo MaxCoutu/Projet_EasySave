@@ -28,6 +28,7 @@ namespace WpfApp
             Directory.CreateDirectory(Path.Combine(baseDir, "Languages"));
             string en = Path.Combine(baseDir, "Languages", "en.json");
             LanguageService = new JsonLanguageService(en);
+
         }
     }
 }
