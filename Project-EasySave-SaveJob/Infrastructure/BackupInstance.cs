@@ -33,6 +33,7 @@ namespace Projet.Infrastructure
         private readonly ILogger _logger;
         private readonly Settings _settings;
         private readonly MemoryAllocationManager _memoryManager;
+        private readonly LargeFileManager _largeFileManager;
         private CancellationTokenSource _cancellationTokenSource;
         private ManualResetEvent _pauseEvent = new ManualResetEvent(true);
         private Task _backupTask;
@@ -47,6 +48,7 @@ namespace Projet.Infrastructure
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _memoryManager = MemoryAllocationManager.Instance;
+            _largeFileManager = LargeFileManager.Instance;
             
             // Ensure the job has a reference to settings
             if (job.Settings == null)
@@ -432,8 +434,27 @@ namespace Projet.Infrastructure
             else 
                 updateIntervalMs = 50; // Petits fichiers
             
+            // Check if this is a large file according to settings
+            bool isLargeFile = _largeFileManager.IsLargeFile(fileSize, _settings);
+            
             try
             {
+                // If this is a large file, request permission to transfer it
+                if (isLargeFile)
+                {
+                    Console.WriteLine($"Large file detected: {source} ({fileSize} bytes), waiting for permission");
+                    
+                    // Update status with large file waiting information
+                    ReportStatus(source, destination, "Waiting for large file transfer permission", isLargeFile, "WAITING");
+                    
+                    // Wait for permission to transfer large file
+                    await _largeFileManager.RequestLargeFileTransferPermissionAsync(Name, source, fileSize, cancellationToken);
+                    
+                    // Update status that we're starting the transfer
+                    ReportStatus(source, destination, "Starting large file transfer", isLargeFile, "TRANSFERRING");
+                    Console.WriteLine($"Permission granted to transfer large file: {source}");
+                }
+                
                 using (var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, bufferSize, FileOptions.Asynchronous))
                 using (var destStream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, FileOptions.Asynchronous))
                 {
@@ -458,7 +479,16 @@ namespace Projet.Infrastructure
                         if ((DateTime.Now - lastReportTime).TotalMilliseconds > updateIntervalMs)
                         {
                             lastReportTime = DateTime.Now;
-                            ReportStatus(source, destination);
+                            
+                            // Include large file status in update if applicable
+                            if (isLargeFile)
+                            {
+                                ReportStatus(source, destination, "", isLargeFile, "TRANSFERRING");
+                            }
+                            else
+                            {
+                                ReportStatus(source, destination);
+                            }
                         }
                         
                         // Yield control to allow other tasks to run
@@ -467,6 +497,12 @@ namespace Projet.Infrastructure
                     
                     // Ensure all data is written to disk
                     await destStream.FlushAsync(cancellationToken);
+                    
+                    // Final status update for this file
+                    if (isLargeFile)
+                    {
+                        ReportStatus(source, destination, "Large file transfer completed", isLargeFile, "COMPLETED");
+                    }
                 }
             }
             catch (Exception)
@@ -484,7 +520,22 @@ namespace Projet.Infrastructure
                     // Ignore cleanup errors
                 }
                 
+                // Release large file permission if this was a large file
+                if (isLargeFile)
+                {
+                    _largeFileManager.ReleaseLargeFileTransferPermission(Name);
+                }
+                
                 throw;
+            }
+            finally
+            {
+                // Release large file permission if this was a large file
+                if (isLargeFile)
+                {
+                    _largeFileManager.ReleaseLargeFileTransferPermission(Name);
+                    Console.WriteLine($"Released permission for large file: {source}");
+                }
             }
         }
         
@@ -510,7 +561,7 @@ namespace Projet.Infrastructure
         /// <summary>
         /// Reports the current status
         /// </summary>
-        private void ReportStatus(string sourcePath = "", string targetPath = "", string errorMessage = "")
+        private void ReportStatus(string sourcePath = "", string targetPath = "", string errorMessage = "", bool isLargeFile = false, string largeFileStatus = "")
         {
             // Clamp between 0-100
             double progressValue = Math.Min(100, Math.Max(0, Progress));
@@ -584,7 +635,9 @@ namespace Projet.Infrastructure
                 IsPriorityFile = isPriorityFile,
                 PriorityFilesToCopy = priorityFileCount,
                 // Ajouter un timestamp unique à chaque fois pour forcer la détection de changement
-                Timestamp = DateTime.Now 
+                Timestamp = DateTime.Now,
+                IsLargeFile = isLargeFile,
+                LargeFileTransferStatus = largeFileStatus
             };
             
             // Log the status - ceci va écrire dans le fichier status.json

@@ -29,6 +29,10 @@ namespace Projet.Infrastructure
         public int PriorityFilesToCopy { get; set; } = 0;
         public bool IsPriorityFile { get; set; } = false;
         
+        // Large file transfer information
+        public bool IsLargeFile { get; set; } = false;
+        public string LargeFileTransferStatus { get; set; } = ""; // WAITING, TRANSFERRING, COMPLETED
+        
         // Error information
         public string ErrorMessage { get; set; } = "";
         
@@ -60,6 +64,8 @@ namespace Projet.Infrastructure
                 Progression = other.Progression;
                 PriorityFilesToCopy = other.PriorityFilesToCopy;
                 IsPriorityFile = other.IsPriorityFile;
+                IsLargeFile = other.IsLargeFile;
+                LargeFileTransferStatus = other.LargeFileTransferStatus;
                 ErrorMessage = other.ErrorMessage;
                 BufferSize = other.BufferSize;
                 ActiveJobs = other.ActiveJobs;

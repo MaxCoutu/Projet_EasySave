@@ -19,6 +19,8 @@ namespace Projet.Service
         private readonly List<BackupJob> _jobs;
         private readonly Dictionary<string, BackupInstance> _backupInstances = new Dictionary<string, BackupInstance>();
         private readonly object _instanceLock = new object();
+        private readonly BlockingProcessMonitor _processMonitor;
+        private bool _autoMonitoringEnabled = true;
 
         public BackupService(ILogger logger, IJobRepository repo, Settings settings)
         {
@@ -27,11 +29,66 @@ namespace Projet.Service
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _jobs = new List<BackupJob>(_repo.Load());
             
+            // Initialize auto-monitoring state from settings
+            _autoMonitoringEnabled = _settings.AutoMonitoringEnabled;
+            
+            // Create process monitor with interval from settings
+            _processMonitor = new BlockingProcessMonitor(this, _settings, _settings.ProcessMonitoringIntervalMs);
+            
+            // Start monitoring if enabled
+            if (_autoMonitoringEnabled)
+            {
+                _processMonitor.Start();
+            }
+            
             // Debug output to verify if jobs are loaded
             Console.WriteLine($"BackupService initialized with {_jobs.Count} jobs:");
             foreach (var job in _jobs)
             {
                 Console.WriteLine($"  - Job: {job.Name}, Source: {job.SourceDir}, Target: {job.TargetDir}");
+            }
+        }
+
+        // Auto monitoring property
+        public bool AutoMonitoringEnabled
+        {
+            get => _autoMonitoringEnabled;
+            set
+            {
+                if (_autoMonitoringEnabled != value)
+                {
+                    _autoMonitoringEnabled = value;
+                    
+                    // Update settings
+                    _settings.AutoMonitoringEnabled = value;
+                    _settings.Save();
+                    
+                    if (_autoMonitoringEnabled)
+                    {
+                        _processMonitor.Start();
+                    }
+                    else
+                    {
+                        _processMonitor.Stop();
+                    }
+                }
+            }
+        }
+        
+        // Process monitoring interval (in milliseconds)
+        public int ProcessMonitoringInterval
+        {
+            get => _processMonitor != null ? _processMonitor.CheckIntervalMs : 5000;
+            set
+            {
+                if (_processMonitor != null && value > 0)
+                {
+                    _processMonitor.SetCheckInterval(value);
+                    
+                    // Update settings
+                    _settings.ProcessMonitoringIntervalMs = value;
+                    _settings.Save();
+                }
             }
         }
 
@@ -63,14 +120,15 @@ namespace Projet.Service
             if (PackageBlocker.IsBlocked(_settings))
             {
                 Console.WriteLine("Blocked package running — job skipped.");
-                return;
+                // Throw an exception instead of silently skipping
+                throw new InvalidOperationException("Cannot start backup: A blocked application is currently running.");
             }
 
             var job = _jobs.FirstOrDefault(j => j.Name == name);
             if (job == null)
             {
                 Console.WriteLine($"Job '{name}' not found.");
-                return;
+                throw new InvalidOperationException($"Job '{name}' not found.");
             }
 
             // Get or create backup instance
@@ -88,7 +146,8 @@ namespace Projet.Service
             if (PackageBlocker.IsBlocked(_settings))
             {
                 Console.WriteLine("Blocked package running — all jobs skipped.");
-                return;
+                // Throw an exception instead of silently skipping
+                throw new InvalidOperationException("Cannot start backups: A blocked application is currently running.");
             }
             
             // Create a list to hold tasks
@@ -231,6 +290,9 @@ namespace Projet.Service
 
         public void Dispose()
         {
+            // Stop process monitor
+            _processMonitor?.Dispose();
+            
             // Cancel all running instances
             CancelAllBackups();
             

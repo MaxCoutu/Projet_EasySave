@@ -34,6 +34,12 @@ namespace Projet.Wpf.View
                         var stopVisible = (state == "ACTIVE" || state == "PAUSED" || state == "PENDING");
                         Console.WriteLine($"Stop button visibility: {stopVisible}");
                         return stopVisible ? Visibility.Visible : Visibility.Hidden;
+                        
+                    case "Error":
+                        // Error panel visible only when job is in ERROR state
+                        var errorVisible = (state == "ERROR");
+                        Console.WriteLine($"Error panel visibility: {errorVisible}");
+                        return errorVisible ? Visibility.Visible : Visibility.Collapsed;
                 }
             }
             else

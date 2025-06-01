@@ -47,6 +47,79 @@ namespace Projet.ViewModel
                 OnPropertyChanged(nameof(PriorityExtensions));
             }
         }
+        
+        // File size units
+        public ObservableCollection<string> FileSizeUnits { get; } = new ObservableCollection<string> { "KB", "MB", "GB" };
+        
+        // Max file size properties
+        private int _maxFileSizeKB;
+        public int MaxFileSizeKB
+        {
+            get => _maxFileSizeKB;
+            set
+            {
+                if (_maxFileSizeKB != value)
+                {
+                    _maxFileSizeKB = value;
+                    OnPropertyChanged(nameof(MaxFileSizeKB));
+                    OnPropertyChanged(nameof(MaxFileSizeDisplay));
+                }
+            }
+        }
+        
+        // Slider value (1-1000)
+        private double _fileSizeValue = 100;
+        public double FileSizeValue
+        {
+            get => _fileSizeValue;
+            set
+            {
+                if (_fileSizeValue != value && value > 0)
+                {
+                    _fileSizeValue = value;
+                    OnPropertyChanged(nameof(FileSizeValue));
+                    // Ne plus mettre à jour automatiquement
+                    // UpdateMaxFileSizeFromInput();
+                }
+            }
+        }
+        
+        // Selected unit index
+        private int _selectedUnitIndex = 0;
+        public int SelectedUnitIndex
+        {
+            get => _selectedUnitIndex;
+            set
+            {
+                if (_selectedUnitIndex != value)
+                {
+                    _selectedUnitIndex = value;
+                    OnPropertyChanged(nameof(SelectedUnitIndex));
+                    // Ne plus mettre à jour automatiquement
+                    // UpdateMaxFileSizeFromInput();
+                }
+            }
+        }
+        
+        // Human-readable display of the max file size
+        public string MaxFileSizeDisplay
+        {
+            get
+            {
+                if (MaxFileSizeKB >= 1048576) // 1 GB in KB
+                {
+                    return $"{MaxFileSizeKB / 1048576.0:F2} GB";
+                }
+                else if (MaxFileSizeKB >= 1024) // 1 MB in KB
+                {
+                    return $"{MaxFileSizeKB / 1024.0:F2} MB";
+                }
+                else
+                {
+                    return $"{MaxFileSizeKB} KB";
+                }
+            }
+        }
 
         public ICommand AddBlockingProgramCommand { get; }
         public ICommand RemoveBlockingProgramCommand { get; }
@@ -55,6 +128,8 @@ namespace Projet.ViewModel
         public ICommand AddPriorityExtensionCommand { get; }
         public ICommand RemovePriorityExtensionCommand { get; }
         public ICommand RemoveItemCommand { get; }
+        public ICommand UpdateMaxFileSizeCommand { get; }
+        public ICommand ApplyFileSizeCommand { get; }
 
         public SettingsViewModel(Settings settings)
         {
@@ -64,6 +139,42 @@ namespace Projet.ViewModel
             _blockedPackages = new ObservableCollection<string>(_settings.BlockedPackages.OrderBy(p => p));
             _cryptoExtensions = new ObservableCollection<string>(_settings.CryptoExtensions.OrderBy(e => e));
             _priorityExtensions = new ObservableCollection<string>(_settings.PriorityExtensions.OrderBy(e => e));
+            _maxFileSizeKB = _settings.MaxFileSizeKB;
+            
+            // Initialize slider value and unit based on current MaxFileSizeKB
+            InitializeFileSizeControls();
+
+            // Add max file size update command
+            UpdateMaxFileSizeCommand = new RelayCommand(param =>
+            {
+                if (param is string sizeStr && !string.IsNullOrWhiteSpace(sizeStr))
+                {
+                    Debug.WriteLine($"[DEBUG] UpdateMaxFileSizeCommand started. Parameter: '{sizeStr}'");
+                    
+                    if (int.TryParse(sizeStr, out int size) && size > 0)
+                    {
+                        _settings.MaxFileSizeKB = size;
+                        MaxFileSizeKB = size;
+                        _settings.Save();
+                        Debug.WriteLine($"[DEBUG] Updated MaxFileSizeKB to {size}KB");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[DEBUG] Failed to parse '{sizeStr}' as a valid file size");
+                    }
+                }
+            });
+            
+            // Command to apply file size from slider and unit selection
+            ApplyFileSizeCommand = new RelayCommand(_ =>
+            {
+                Debug.WriteLine($"[DEBUG] ApplyFileSizeCommand executed. Value: {_fileSizeValue}, Unit: {FileSizeUnits[_selectedUnitIndex]}");
+                
+                // Appliquer et sauvegarder la nouvelle valeur
+                UpdateMaxFileSizeFromInput(true);
+                
+                Debug.WriteLine($"[DEBUG] MaxFileSizeKB updated to: {_maxFileSizeKB} KB");
+            });
 
             AddBlockingProgramCommand = new RelayCommand(param =>
             {
@@ -238,6 +349,70 @@ namespace Projet.ViewModel
                     }
                 }
             });
+        }
+        
+        // Initialize slider value and unit based on current MaxFileSizeKB
+        private void InitializeFileSizeControls()
+        {
+            if (MaxFileSizeKB >= 1048576) // 1 GB in KB
+            {
+                _selectedUnitIndex = 2; // GB
+                _fileSizeValue = Math.Round(MaxFileSizeKB / 1048576.0, 2);
+            }
+            else if (MaxFileSizeKB >= 1024) // 1 MB in KB
+            {
+                _selectedUnitIndex = 1; // MB
+                _fileSizeValue = Math.Round(MaxFileSizeKB / 1024.0, 2);
+            }
+            else
+            {
+                _selectedUnitIndex = 0; // KB
+                _fileSizeValue = MaxFileSizeKB;
+            }
+            
+            // Notify UI
+            OnPropertyChanged(nameof(FileSizeValue));
+            OnPropertyChanged(nameof(SelectedUnitIndex));
+        }
+        
+        // Update MaxFileSizeKB based on input value and selected unit
+        private void UpdateMaxFileSizeFromInput(bool saveToSettings = false)
+        {
+            // Ensure the value is positive
+            if (_fileSizeValue <= 0)
+            {
+                _fileSizeValue = 1;
+                OnPropertyChanged(nameof(FileSizeValue));
+            }
+            
+            int newSizeKB;
+            
+            switch (SelectedUnitIndex)
+            {
+                case 1: // MB
+                    newSizeKB = (int)(_fileSizeValue * 1024);
+                    break;
+                case 2: // GB
+                    newSizeKB = (int)(_fileSizeValue * 1048576);
+                    break;
+                default: // KB
+                    newSizeKB = (int)_fileSizeValue;
+                    break;
+            }
+            
+            // Ensure minimum size of 1 KB
+            newSizeKB = Math.Max(1, newSizeKB);
+            
+            MaxFileSizeKB = newSizeKB;
+            
+            if (saveToSettings)
+            {
+                _settings.MaxFileSizeKB = newSizeKB;
+                _settings.Save();
+                Debug.WriteLine($"[DEBUG] Saved MaxFileSizeKB to {newSizeKB}KB");
+            }
+            
+            OnPropertyChanged(nameof(MaxFileSizeDisplay));
         }
     }
 } 

@@ -102,6 +102,22 @@ namespace Projet.Model
             } 
         }
 
+        private string _lastError = string.Empty;
+        public string LastError 
+        { 
+            get => _lastError; 
+            set 
+            { 
+                if (_lastError != value)
+                {
+                    _lastError = value;
+                    OnPropertyChanged(nameof(LastError));
+                    // Forcer un rafraîchissement global
+                    IncrementRefreshCounter();
+                }
+            } 
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         public void OnPropertyChanged(string propertyName)
         {

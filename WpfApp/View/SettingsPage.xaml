@@ -204,6 +204,131 @@
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
+        
+        <!-- Slider Style -->
+        <Style x:Key="CustomSliderStyle" TargetType="Slider">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" MinHeight="{TemplateBinding MinHeight}"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Track Background -->
+                            <Border x:Name="PART_TrackBackground" 
+                                    Grid.Row="1" 
+                                    Height="4" 
+                                    CornerRadius="2" 
+                                    Background="#33FFFFFF"
+                                    VerticalAlignment="Center"/>
+                            
+                            <!-- Selection Range -->
+                            <Border x:Name="PART_SelectionRange" 
+                                    Grid.Row="1" 
+                                    Height="4" 
+                                    CornerRadius="2" 
+                                    Background="#7428D7"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"/>
+                            
+                            <!-- Thumb -->
+                            <Thumb x:Name="Thumb" 
+                                   Grid.Row="1" 
+                                   Width="16" 
+                                   Height="16">
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Ellipse Fill="#7428D7" Stroke="#FFFFFF" StrokeThickness="1"/>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Thumb" Property="Width" Value="18"/>
+                                <Setter TargetName="Thumb" Property="Height" Value="18"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- ComboBox Style -->
+        <Style x:Key="CustomComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="#CC19173D"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#7F19173D"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton" 
+                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          Background="{TemplateBinding Background}"
+                                          BorderBrush="{TemplateBinding BorderBrush}"
+                                          BorderThickness="{TemplateBinding BorderThickness}"
+                                          Padding="{TemplateBinding Padding}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Border" 
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                CornerRadius="5">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="20"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter Grid.Column="0" 
+                                                                  Content="{TemplateBinding Content}"
+                                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                  HorizontalAlignment="Left"
+                                                                  VerticalAlignment="Center"
+                                                                  Margin="5,0,0,0"/>
+                                                <Path Grid.Column="1" 
+                                                      x:Name="Arrow"
+                                                      Fill="White"
+                                                      Data="M0,0 L4,4 L8,0 Z"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                                <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Left"
+                                                  Margin="5,0,0,0"/>
+                            </ToggleButton>
+                            <Popup x:Name="Popup"
+                                   Placement="Bottom"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Slide">
+                                <Border x:Name="DropDownBorder"
+                                        Background="#FF302E66"
+                                        BorderBrush="#7F19173D"
+                                        BorderThickness="1"
+                                        CornerRadius="5"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <ScrollViewer Margin="0,2,0,2" SnapsToDevicePixels="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
     
     <Grid Background="#FF25234E">
@@ -393,7 +518,7 @@
                     <Border Background="#FF302E66" 
                             CornerRadius="15" 
                             Padding="20"
-                            Margin="0,0,0,0"
+                            Margin="0,0,15,0"
                             Width="280"
                             Height="360"
                             VerticalAlignment="Top">
@@ -468,6 +593,115 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+                    
+                    <!-- Max File Size Section -->
+                    <Border Background="#FF302E66" 
+                            CornerRadius="15" 
+                            Padding="20"
+                            Margin="0,0,0,0"
+                            Width="280"
+                            Height="360"
+                            VerticalAlignment="Top">
+                        <DockPanel>
+                            <!-- Section Title -->
+                            <TextBlock Text="Maximum File Size" 
+                                       Style="{StaticResource CategoryTitleStyle}"
+                                       DockPanel.Dock="Top"/>
+                            
+                            <!-- Input Area -->
+                            <Grid DockPanel.Dock="Top" Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBox x:Name="MaxFileSizeInput"
+                                         Grid.Column="0"
+                                         Background="#CC19173D"
+                                         BorderBrush="#7F19173D"
+                                         Foreground="#7B78AA"
+                                         BorderThickness="0"
+                                         Padding="10"
+                                         Text="{Binding FileSizeValue, UpdateSourceTrigger=PropertyChanged}" 
+                                         Height="40" 
+                                         FontSize="14"
+                                         Style="{StaticResource RoundedTextBoxStyle}"/>
+                                         
+                                <ComboBox Grid.Column="1" 
+                                          Width="70" 
+                                          Height="40"
+                                          Background="#CC19173D"
+                                          Foreground="#7B78AA"
+                                          BorderBrush="#7F19173D"
+                                          BorderThickness="0"
+                                          ItemsSource="{Binding FileSizeUnits}"
+                                          SelectedIndex="{Binding SelectedUnitIndex}"
+                                          Margin="10,0,0,0">
+                                    <ComboBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="10"/>
+                                        </Style>
+                                    </ComboBox.Resources>
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="Padding" Value="8,4"/>
+                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </Grid>
+                            
+                            <!-- Apply Button -->
+                            <Button Content="Apply" 
+                                    Height="40"
+                                    Background="#7428D7"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Command="{Binding ApplyFileSizeCommand}"
+                                    DockPanel.Dock="Top"
+                                    Margin="0,0,0,15">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="10"/>
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                            
+                            <!-- Current Value Display -->
+                            <Border Background="#33FFFFFF" 
+                                    CornerRadius="5" 
+                                    Padding="12,8" 
+                                    Margin="0,0,0,10" 
+                                    DockPanel.Dock="Top">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0"
+                                               Text="Current value: "
+                                               Foreground="#7B78AA"
+                                               FontSize="14"/>
+                                               
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding MaxFileSizeDisplay}"
+                                               Foreground="White"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"/>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Helper Text -->
+                            <TextBlock Text="Maximum size of files that can be transferred simultaneously" 
+                                       Foreground="#7B78AA"
+                                       TextWrapping="Wrap"
+                                       Margin="0,5,0,0"
+                                       FontSize="12"
+                                       DockPanel.Dock="Top"/>
                         </DockPanel>
                     </Border>
                 </StackPanel>

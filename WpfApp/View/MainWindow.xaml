@@ -1,4 +1,4 @@
-﻿<Window x:Class="Projet.Wpf.View.MainWindow"
+<Window x:Class="Projet.Wpf.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:loc="clr-namespace:Projet.Wpf.Localization"
@@ -403,6 +403,19 @@
                                                     </TextBlock>
                                                 </Grid>
 
+                                                <!-- Message d'erreur visible quand State="ERROR" -->
+                                                <Grid x:Name="ErrorPanel" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                                                      Visibility="{Binding Path=State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Error}">
+                                                    <TextBlock Foreground="#FFEE5555" 
+                                                               FontWeight="SemiBold" 
+                                                               FontSize="12" 
+                                                               TextWrapping="Wrap"
+                                                               HorizontalAlignment="Left">
+                                                        <Run Text="Erreur: "/>
+                                                        <Run Text="{Binding LastError, Mode=OneWay}"/>
+                                                    </TextBlock>
+                                                </Grid>
+
                                                 <!-- Buttons Container -->
                                                 <Grid Grid.Column="1" Grid.Row="0" x:Name="ButtonsGrid">
                                                     <Grid.ColumnDefinitions>
@@ -419,7 +432,7 @@
                                                             x:Name="PlayButtonContainer"
                                                             Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Play}">
                                                         <Button Style="{StaticResource ControlButtonStyle}"
-                                                                Command="{Binding DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Command="{Binding Path=DataContext.RunJobCmd, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                                 CommandParameter="{Binding}"
                                                                 ToolTip="{loc:Loc play_tooltip}">
                                                             <Path Data="M0,0 L0,20 L18,10 Z"
@@ -437,7 +450,7 @@
                                                             Background="Transparent"
                                                             Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=PauseResume}">
                                                         <Button Style="{StaticResource ControlButtonStyle}"
-                                                                Command="{Binding DataContext.PauseResumeJobCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Command="{Binding Path=DataContext.PauseResumeJobCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                                 CommandParameter="{Binding}"
                                                                 ToolTip="Pause/Resume"
                                                                 Tag="{Binding State}"
@@ -468,7 +481,7 @@
                                                             x:Name="StopButtonContainer"
                                                             Visibility="{Binding State, Converter={StaticResource JobStateToVisibilityConverter}, ConverterParameter=Stop}">
                                                         <Button Style="{StaticResource ControlButtonStyle}"
-                                                                Command="{Binding DataContext.StopJobCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                Command="{Binding Path=DataContext.StopJobCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                                 CommandParameter="{Binding}"
                                                                 ToolTip="Stop"
                                                                 Tag="{Binding State}"

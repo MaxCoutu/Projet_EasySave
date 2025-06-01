@@ -11,6 +11,10 @@ namespace Projet.Service
     {
         event Action<StatusEntry> StatusUpdated;
 
+        // Auto-monitoring properties
+        bool AutoMonitoringEnabled { get; set; }
+        int ProcessMonitoringInterval { get; set; }
+
         void AddJob(BackupJob job);              
         void RemoveJob(string name);             
 

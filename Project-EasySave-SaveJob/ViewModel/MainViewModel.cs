@@ -133,10 +133,22 @@ namespace Projet.ViewModel
                 _ => _selected != null
             );
             
-            RunAllCmd = new Infrastructure.RelayCommand(
-                async _ => await RunAllJobsAsync(),
-                _ => Jobs.Count > 0
-            );
+            RunAllCmd = new Infrastructure.RelayCommand(async _ =>
+            {
+                if (Jobs.Count > 0)
+                {
+                    // Exécuter directement le RunAllJobsAsync sans passer par Task.Run
+                    // pour gérer correctement les exceptions
+                    try
+                    {
+                        await RunAllJobsAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in RunAllCmd: {ex.Message}");
+                    }
+                }
+            }, _ => Jobs.Count > 0 && !IsBackupRunning);
             
             CancelBackupCmd = new Infrastructure.RelayCommand(
                 _ => CancelBackup(),
@@ -171,9 +183,32 @@ namespace Projet.ViewModel
                             // Start the job
                             await _svc.ExecuteBackupAsync(jobName);
                         }
+                        catch (InvalidOperationException ex) when (ex.Message.Contains("blocked application"))
+                        {
+                            // Une application bloquante est en cours d'exécution
+                            Console.WriteLine($"Blocked application error: {ex.Message}");
+                            
+                            // Update job status to ERROR with message
+                            job.State = "ERROR";
+                            job.LastError = "Une application bloquante est en cours d'exécution. Veuillez fermer toutes les applications bloquantes et réessayer.";
+                            job.Progression = 0;
+                            
+                            // Notify UI of the change
+                            OnPropertyChanged(nameof(Jobs));
+                            OnPropertyChanged(nameof(RecentJobs));
+                        }
                         catch (Exception ex)
                         {
                             Console.WriteLine($"Error executing job: {ex.Message}");
+                            
+                            // Update job status to ERROR
+                            job.State = "ERROR";
+                            job.LastError = ex.Message;
+                            job.Progression = 0;
+                            
+                            // Notify UI of the change
+                            OnPropertyChanged(nameof(Jobs));
+                            OnPropertyChanged(nameof(RecentJobs));
                         }
                         finally
                         {
@@ -530,45 +565,77 @@ namespace Projet.ViewModel
 
         private async Task RunAllJobsAsync()
         {
-            if (Jobs.Count > 0)
+            Console.WriteLine("RunAllJobsAsync: Starting");
+            try
             {
-                try
+                // Mark all jobs as pending
+                foreach (var job in Jobs)
                 {
-                    // Mark all jobs as pending for UI feedback
-                    foreach (var job in Jobs)
+                    job.State = "PENDING";
+                    job.Progression = 0;
+                    job.LastError = string.Empty;
+                }
+                
+                // Update UI
+                OnPropertyChanged(nameof(Jobs));
+                OnPropertyChanged(nameof(RecentJobs));
+                
+                // Set flag
+                IsBackupRunning = true;
+                
+                // Execute all jobs
+                await _svc.ExecuteAllBackupsAsync();
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("blocked application"))
+            {
+                Console.WriteLine($"Blocked application error: {ex.Message}");
+                
+                // Update all pending jobs to ERROR with message
+                foreach (var job in Jobs)
+                {
+                    if (job.State == "PENDING" || job.State == "ACTIVE")
                     {
-                        job.State = "PENDING";
-                        job.Progression = 0.01;
+                        job.State = "ERROR";
+                        job.LastError = "Une application bloquante est en cours d'exécution. Veuillez fermer toutes les applications bloquantes et réessayer.";
+                        job.Progression = 0;
                     }
-                    
-                    // Notify UI of changes
-                    OnPropertyChanged(nameof(Jobs));
-                    OnPropertyChanged(nameof(RecentJobs));
-                    
-                    // Démarrer tous les jobs dans un thread séparé
-                    Task.Run(async () => 
-                    {
-                        try
-                        {
-                            // Execute all backups
-                            await _svc.ExecuteAllBackupsAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Error in RunAllJobsAsync: {ex.Message}");
-                        }
-                        finally
-                        {
-                            // Update job status
-                            UpdateJobsStatus();
-                        }
-                    });
                 }
-                catch (Exception ex)
+                
+                // Update UI
+                OnPropertyChanged(nameof(Jobs));
+                OnPropertyChanged(nameof(RecentJobs));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RunAllJobsAsync error: {ex.Message}");
+                
+                // Mark all pending jobs as errored
+                foreach (var job in Jobs)
                 {
-                    Console.WriteLine($"Error setting up jobs for RunAllJobsAsync: {ex.Message}");
-                    UpdateJobsStatus();
+                    if (job.State == "PENDING" || job.State == "ACTIVE")
+                    {
+                        job.State = "ERROR";
+                        job.LastError = ex.Message;
+                        job.Progression = 0;
+                    }
                 }
+                
+                // Update UI
+                OnPropertyChanged(nameof(Jobs));
+                OnPropertyChanged(nameof(RecentJobs));
+            }
+            finally
+            {
+                // Reset flag if no jobs are running
+                if (!Jobs.Any(j => j.State == "ACTIVE" || j.State == "PENDING" || j.State == "PAUSED"))
+                {
+                    IsBackupRunning = false;
+                }
+                
+                // Update job status in UI
+                UpdateJobsStatus();
+                
+                Console.WriteLine("RunAllJobsAsync: Completed");
             }
         }
 
