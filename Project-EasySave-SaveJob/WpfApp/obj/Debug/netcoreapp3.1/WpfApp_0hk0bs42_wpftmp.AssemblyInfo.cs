@@ -13,7 +13,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WpfApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< Updated upstream:Project-EasySave-SaveJob/WpfApp/obj/Debug/netcoreapp3.1/WpfApp_0hk0bs42_wpftmp.AssemblyInfo.cs
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+921c467a3b18dd7952b181a52a0214a22b5184aa")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+021144971f93abb2e621f3adf1c71dc36f9dfb85")]
+>>>>>>> Stashed changes:Project-EasySave-SaveJob/WpfApp/obj/Debug/netcoreapp3.1/WpfApp_xwytf1kn_wpftmp.AssemblyInfo.cs
 [assembly: System.Reflection.AssemblyProductAttribute("WpfApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WpfApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

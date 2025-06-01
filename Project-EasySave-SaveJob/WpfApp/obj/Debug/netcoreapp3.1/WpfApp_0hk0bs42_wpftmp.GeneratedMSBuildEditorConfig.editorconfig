@@ -1,6 +1,10 @@
 is_global = true
 build_property.RootNamespace = WpfApp
+<<<<<<< Updated upstream:Project-EasySave-SaveJob/WpfApp/obj/Debug/netcoreapp3.1/WpfApp_0hk0bs42_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
 build_property.ProjectDir = C:\Users\jmail\OneDrive\Bureau\ProjetLogiciel\Easy-Save\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\
+=======
+build_property.ProjectDir = C:\Users\HP\OneDrive\Bureau\Nicks\Projet_EasySave\Project-EasySave-SaveJob\WpfApp\
+>>>>>>> Stashed changes:Project-EasySave-SaveJob/WpfApp/obj/Debug/netcoreapp3.1/WpfApp_xwytf1kn_wpftmp.GeneratedMSBuildEditorConfig.editorconfig
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false
