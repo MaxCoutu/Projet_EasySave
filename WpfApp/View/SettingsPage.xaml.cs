@@ -12,11 +12,6 @@ namespace Projet.Wpf.View
             InitializeComponent();
         }
 
-        private void BlockingProgramInput_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // This can be removed if not used, or kept for future use
-        }
-
         private void TextBox_GotFocus(object sender, System.Windows.RoutedEventArgs e)
         {
             if (sender is TextBox tb)
@@ -40,48 +35,21 @@ namespace Projet.Wpf.View
                 }
             }
         }
-
-        public void ResetBlockingProgramInput()
+        
+        private void ResetTextBox(TextBox textBox)
         {
-            BlockingProgramInput.Text = BlockingProgramInput.Tag?.ToString();
-            BlockingProgramInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
-        }
-
-        public void ResetExtensionInput()
-        {
-            ExtensionInput.Text = ExtensionInput.Tag?.ToString();
-            ExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
-        }
-
-        public void ResetRemoveBlockingProgramInput()
-        {
-            RemoveBlockingProgramInput.Text = RemoveBlockingProgramInput.Tag?.ToString();
-            RemoveBlockingProgramInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
-        }
-
-        public void ResetRemoveExtensionInput()
-        {
-            RemoveExtensionInput.Text = RemoveExtensionInput.Tag?.ToString();
-            RemoveExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
-        }
-
-        public void ResetPriorityExtensionInput()
-        {
-            PriorityExtensionInput.Text = PriorityExtensionInput.Tag?.ToString();
-            PriorityExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
-        }
-
-        public void ResetRemovePriorityExtensionInput()
-        {
-            RemovePriorityExtensionInput.Text = RemovePriorityExtensionInput.Tag?.ToString();
-            RemovePriorityExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
+            if (textBox != null)
+            {
+                textBox.Text = textBox.Tag?.ToString();
+                textBox.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
+            }
         }
 
         private void AddBlockingProgram_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                ResetBlockingProgramInput();
+                ResetTextBox(BlockingProgramInput);
             }), DispatcherPriority.ContextIdle, null);
         }
 
@@ -89,23 +57,7 @@ namespace Projet.Wpf.View
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                ResetExtensionInput();
-            }), DispatcherPriority.ContextIdle, null);
-        }
-
-        private void RemoveBlockingProgram_Click(object sender, System.Windows.RoutedEventArgs e)
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                ResetRemoveBlockingProgramInput();
-            }), DispatcherPriority.ContextIdle, null);
-        }
-
-        private void RemoveExtension_Click(object sender, System.Windows.RoutedEventArgs e)
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                ResetRemoveExtensionInput();
+                ResetTextBox(ExtensionInput);
             }), DispatcherPriority.ContextIdle, null);
         }
 
@@ -113,15 +65,7 @@ namespace Projet.Wpf.View
         {
             Dispatcher.BeginInvoke(new Action(() =>
             {
-                ResetPriorityExtensionInput();
-            }), DispatcherPriority.ContextIdle, null);
-        }
-
-        private void RemovePriorityExtension_Click(object sender, System.Windows.RoutedEventArgs e)
-        {
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                ResetRemovePriorityExtensionInput();
+                ResetTextBox(PriorityExtensionInput);
             }), DispatcherPriority.ContextIdle, null);
         }
     }
