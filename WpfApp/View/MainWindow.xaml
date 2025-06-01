@@ -114,6 +114,11 @@
             </Setter>
         </Style>
 
+        <!-- DataTemplate pour la vue de déchiffrement -->
+        <DataTemplate x:Key="DecryptorViewTemplate">
+            <local:DecryptorView />
+        </DataTemplate>
+
         <!-- DataTemplate pour la vue principale -->
         <DataTemplate x:Key="MainViewTemplate">
             <Grid Margin="30,20,20,20">
@@ -208,10 +213,36 @@
                             </Viewbox>
                         </Button>
                         
+                        <!-- Decrypt Files Button -->
+                        <Button Background="Transparent" BorderThickness="0"
+                                Cursor="Hand"
+                                Command="{Binding LaunchDecryptorCommand}"
+                                ToolTip="Ouvrir un fichier chiffré"
+                                Margin="10,0,0,0">
+                            <Viewbox Width="44" Height="44">
+                                <Canvas Width="24" Height="24">
+                                    <Path Data="M6 10V8C6 4.69 7 2 12 2C17 2 18 4.69 18 8V10M17 22H7C5 22 3 21 3 18V14C3 11 5 10 7 10H17C19 10 21 11 21 14V18C21 21 19 22 17 22Z" 
+                                          Stroke="White" 
+                                          StrokeThickness="2" 
+                                          StrokeStartLineCap="Round" 
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"/>
+                                    <Path Data="M8 16H16M12 12V19" 
+                                          Stroke="White" 
+                                          StrokeThickness="2" 
+                                          StrokeStartLineCap="Round" 
+                                          StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round"/>
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
+                        
                         <Button Background="Transparent" BorderThickness="0"
                                 Cursor="Hand"
                                 Command="{Binding SetFrenchCommand}"
-                                Margin="40,0,0,0">
+                                Margin="25,0,0,0"
+                                Focusable="False"
+                                ClickMode="Release">
                                 <Viewbox Width="45" Height="43">
                                     <Canvas Width="36" Height="36">
                                         <Path Data="M36 27a4 4 0 0 1-4 4h-8V5h8a4 4 0 0 1 4 4v18z" Fill="#ED2939"/>
@@ -223,7 +254,9 @@
                         <Button Background="Transparent" BorderThickness="0"
                                 Cursor="Hand"
                                 Command="{Binding SetEnglishCommand}"
-                                Margin="10,0,0,0">
+                                Margin="5,0,0,0"
+                                Focusable="False"
+                                ClickMode="Release">
                                 <Viewbox Width="45" Height="42">
                                     <Canvas Width="28" Height="18" Margin="0,-2,0,0">
                                         <Canvas.Clip>
@@ -565,6 +598,25 @@
                                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                                 <ContentPresenter Content="{Binding}"/>
                                             </ScrollViewer>
+                                        </Border>
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding CurrentViewModel, Converter={x:Static local:ViewModelTypeConverter.Instance}}" Value="DecryptorViewModel">
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <Border Background="#FF25234E"
+                                                Width="700" Height="450"
+                                                CornerRadius="15"
+                                                Padding="20"
+                                                BorderBrush="#FF3B3A5E"
+                                                BorderThickness="1"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+                                            <ContentControl ContentTemplate="{StaticResource DecryptorViewTemplate}" 
+                                                          DataContext="{Binding}"/>
                                         </Border>
                                     </DataTemplate>
                                 </Setter.Value>

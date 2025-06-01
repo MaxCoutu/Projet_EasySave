@@ -446,6 +446,45 @@
                                        Style="{StaticResource CategoryTitleStyle}"
                                        DockPanel.Dock="Top"/>
                             
+                            <!-- Encryption Key Input -->
+                            <Grid DockPanel.Dock="Top" Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <TextBox x:Name="EncryptionKeyInput"
+                                         Grid.Column="0"
+                                         Background="#CC19173D"
+                                         BorderBrush="#7F19173D"
+                                         Foreground="#7B78AA"
+                                         BorderThickness="0"
+                                         Padding="10"
+                                         Text="{Binding EncryptionKey, UpdateSourceTrigger=PropertyChanged}" 
+                                         Height="40" 
+                                         FontSize="14"
+                                         Style="{StaticResource RoundedTextBoxStyle}"/>
+                                         
+                                <Button Grid.Column="1" 
+                                        Content="Save" 
+                                        Width="60" 
+                                        Height="40"
+                                        Background="#7428D7"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        Style="{StaticResource CircularButtonStyle}"
+                                        Command="{Binding SaveEncryptionKeyCommand}"
+                                        Margin="10,0,0,0"/>
+                            </Grid>
+                            
+                            <!-- Key Hint -->
+                            <TextBlock Text="Encryption key (min. 8 characters recommended)" 
+                                       Foreground="#7B78AA"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,15"
+                                       FontSize="12"
+                                       DockPanel.Dock="Top"/>
+                            
                             <!-- Input Area -->
                             <Grid DockPanel.Dock="Top" Margin="0,0,0,15">
                                 <Grid.ColumnDefinitions>
