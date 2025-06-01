@@ -16,16 +16,54 @@ namespace Projet.Model
             string sourceDir = job.SourceDir.Trim('"').Trim();
             string targetDir = job.TargetDir.Trim('"').Trim();
             
-            List<string> files = Directory
+            // Load the settings to get priority extensions
+            Settings settings = job.Settings ?? new Settings();
+            
+            // Get all files to backup
+            List<string> allFiles = Directory
                 .EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories)
                 .ToList();
-
-            long totalSize = files.Sum(f => new FileInfo(f).Length);
+                
+            // Split files into priority and non-priority
+            List<string> priorityFiles = allFiles
+                .Where(file => IsPriorityFile(file, settings.PriorityExtensions))
+                .ToList();
+                
+            List<string> regularFiles = allFiles
+                .Where(file => !IsPriorityFile(file, settings.PriorityExtensions))
+                .ToList();
+                
+            // Calculate total size and file counts
+            long totalSize = allFiles.Sum(f => new FileInfo(f).Length);
+            int totalFiles = allFiles.Count;
+            
+            // Combine the lists with priority files first
+            List<string> orderedFiles = new List<string>();
+            orderedFiles.AddRange(priorityFiles);
+            orderedFiles.AddRange(regularFiles);
+            
+            // Variables to track progress
             long bytesCopied = 0;
-            int totalFiles = files.Count;
             int filesCopied = 0;
+            
+            // First send a status update showing which files are prioritized
+            var initialStatus = new StatusEntry
+            {
+                Name = job.Name,
+                SourceFilePath = string.Empty,
+                TargetFilePath = string.Empty,
+                State = "ACTIVE",
+                TotalFilesToCopy = totalFiles,
+                PriorityFilesToCopy = priorityFiles.Count,
+                TotalFilesSize = totalSize,
+                NbFilesLeftToDo = totalFiles,
+                Progression = 0.0
+            };
+            
+            progressCallback?.Invoke(initialStatus);
 
-            foreach (string src in files)
+            // Process all files in order (priority first, then regular)
+            foreach (string src in orderedFiles)
             {
                 string rel = Path.GetRelativePath(sourceDir, src);
                 string dest = Path.Combine(targetDir, rel);
@@ -39,6 +77,9 @@ namespace Projet.Model
 
                 // Get the file size before copying
                 long fileSize = new FileInfo(src).Length;
+                
+                // Check if this is a priority file
+                bool isPriority = IsPriorityFile(src, settings.PriorityExtensions);
                 
                 // Use the base class implementation for file copying with progress tracking
                 await CopyFileWithProgressAsync(src, dest, (bytesTransferred, isComplete) =>
@@ -55,9 +96,11 @@ namespace Projet.Model
                         TargetFilePath = dest,
                         State = "ACTIVE",
                         TotalFilesToCopy = totalFiles,
+                        PriorityFilesToCopy = priorityFiles.Count,
                         TotalFilesSize = totalSize,
                         NbFilesLeftToDo = totalFiles - filesCopied,
-                        Progression = progress * 100.0 // Convert to percentage (0-100)
+                        Progression = progress * 100.0, // Convert to percentage (0-100)
+                        IsPriorityFile = isPriority
                     };
                     
                     progressCallback?.Invoke(status);
@@ -76,6 +119,7 @@ namespace Projet.Model
                 TargetFilePath = string.Empty,
                 State = "ACTIVE",
                 TotalFilesToCopy = totalFiles,
+                PriorityFilesToCopy = priorityFiles.Count,
                 TotalFilesSize = totalSize,
                 NbFilesLeftToDo = 0,
                 Progression = 100.0 // 100% complete
@@ -83,7 +127,7 @@ namespace Projet.Model
             
             progressCallback?.Invoke(finalStatus);
             
-            Console.WriteLine($"Full Backup completed: {filesCopied} files, {bytesCopied} bytes transferred");
+            Console.WriteLine($"Full Backup completed: {filesCopied} files ({priorityFiles.Count} priority), {bytesCopied} bytes transferred");
         }
 
         // Use 'new' keyword to indicate this method intentionally hides the base class method

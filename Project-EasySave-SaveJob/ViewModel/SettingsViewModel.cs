@@ -15,6 +15,8 @@ namespace Projet.ViewModel
         public ICommand RemoveBlockingProgramCommand { get; }
         public ICommand AddExtensionCommand { get; }
         public ICommand RemoveExtensionCommand { get; }
+        public ICommand AddPriorityExtensionCommand { get; }
+        public ICommand RemovePriorityExtensionCommand { get; }
 
         public SettingsViewModel(Settings settings)
         {
@@ -98,6 +100,50 @@ namespace Projet.ViewModel
                 {
                     string ext = extension.StartsWith(".") ? extension : "." + extension;
                     if (_settings.CryptoExtensions.Remove(ext))
+                    {
+                        _settings.Save();
+                    }
+                }
+            });
+            
+            // Add priority extension command
+            AddPriorityExtensionCommand = new RelayCommand(param =>
+            {
+                Debug.WriteLine($"[DEBUG] AddPriorityExtensionCommand started. Parameter: '{param}'");
+                if (param is string extension && !string.IsNullOrWhiteSpace(extension) && extension != PlaceholderExtensionName)
+                {
+                    string ext = extension.StartsWith(".") ? extension : "." + extension;
+                    Debug.WriteLine($"[DEBUG] Processed priority extension: '{ext}'");
+                    Debug.WriteLine($"[DEBUG] PriorityExtensions BEFORE: {JsonSerializer.Serialize(_settings.PriorityExtensions)}");
+
+                    if (!_settings.PriorityExtensions.Contains(ext))
+                    {
+                        _settings.PriorityExtensions.Add(ext);
+                        Debug.WriteLine($"[DEBUG] Added '{ext}' to PriorityExtensions.");
+                    }
+                    else
+                    {
+                        Debug.WriteLine($"[DEBUG] PriorityExtensions already contains '{ext}'.");
+                    }
+                    
+                    _settings.Save();
+                    Debug.WriteLine($"[DEBUG] Settings saved by AddPriorityExtensionCommand.");
+                    Debug.WriteLine($"[DEBUG] PriorityExtensions AFTER SAVE: {JsonSerializer.Serialize(_settings.PriorityExtensions)}");
+                }
+                else
+                {
+                    Debug.WriteLine($"[DEBUG] AddPriorityExtensionCommand: Invalid parameter, whitespace, or placeholder.");
+                }
+                Debug.WriteLine($"[DEBUG] AddPriorityExtensionCommand finished.");
+            });
+
+            // Remove priority extension command
+            RemovePriorityExtensionCommand = new RelayCommand(param =>
+            {
+                if (param is string extension && !string.IsNullOrWhiteSpace(extension) && extension != PlaceholderExtensionName)
+                {
+                    string ext = extension.StartsWith(".") ? extension : "." + extension;
+                    if (_settings.PriorityExtensions.Remove(ext))
                     {
                         _settings.Save();
                     }

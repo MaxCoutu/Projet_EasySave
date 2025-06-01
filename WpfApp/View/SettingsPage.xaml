@@ -222,6 +222,97 @@
                             Margin="10,0,0,0"/>
                 </Grid>
             </Border>
+            
+            <!-- Add Priority File Extension Section -->
+            <Border Background="#FF302E66" 
+                    CornerRadius="10" 
+                    Padding="15" 
+                    Margin="0,0,0,10" 
+                    Width="455" 
+                    Height="83">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,0,-8">
+                        <TextBlock Text="Add Priority File Extension" 
+                                   Foreground="White" 
+                                   FontSize="16" 
+                                   FontWeight="Bold" 
+                                   Margin="0,-10,0,10" 
+                                   HorizontalAlignment="Left"/>
+                        <TextBox x:Name="PriorityExtensionInput"
+                                 Background="#CC19173D"
+                                 Foreground="#FF7B78AA"
+                                 BorderThickness="0"
+                                 Padding="10"
+                                 Text="File extension name (.txt)" 
+                                 Tag="File extension name (.txt)" 
+                                 GotFocus="TextBox_GotFocus"
+                                 LostFocus="TextBox_LostFocus"
+                                 Height="34"
+                                 Style="{StaticResource RoundedTextBoxStyle}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" 
+                            Content="+" 
+                            Width="30" 
+                            Height="30"
+                            Background="#4B4D8C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Style="{StaticResource CircularButtonStyle}"
+                            Command="{Binding AddPriorityExtensionCommand}"
+                            CommandParameter="{Binding ElementName=PriorityExtensionInput, Path=Text}"
+                            Click="AddPriorityExtension_Click"
+                            Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
+            
+            <!-- Remove Priority File Extension Section -->
+            <Border Background="#FF302E66" 
+                    CornerRadius="10" 
+                    Padding="15" 
+                    Margin="0,0,0,10" 
+                    Width="455" 
+                    Height="83">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,0,-8">
+                        <TextBlock Text="Remove Priority File Extension" 
+                                   Foreground="White" 
+                                   FontSize="16" 
+                                   FontWeight="Bold" 
+                                   Margin="0,-10,0,10"/>
+                        <TextBox x:Name="RemovePriorityExtensionInput"
+                                 Background="#CC19173D"
+                                 Foreground="#FF7B78AA"
+                                 BorderThickness="0"
+                                 Padding="10"
+                                 Text="File extension name (.txt)" 
+                                 Tag="File extension name (.txt)" 
+                                 GotFocus="TextBox_GotFocus"
+                                 LostFocus="TextBox_LostFocus"
+                                 Height="34" 
+                                 Style="{StaticResource RoundedTextBoxStyle}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" 
+                            Content="-" 
+                            Width="30" 
+                            Height="30"
+                            Background="#4B4D8C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Style="{StaticResource CircularButtonStyle}"
+                            Command="{Binding RemovePriorityExtensionCommand}"
+                            CommandParameter="{Binding ElementName=RemovePriorityExtensionInput, Path=Text}"
+                            Click="RemovePriorityExtension_Click"
+                            Margin="10,0,0,0"/>
+                </Grid>
+            </Border>
         </StackPanel>
     </Grid>
 </UserControl>

@@ -25,6 +25,7 @@ namespace Projet.Model
         public string SourceDir { get; set; } = string.Empty;
         public string TargetDir { get; set; } = string.Empty;
         public IBackupStrategy Strategy { get; set; } = null!;
+        public Settings Settings { get; set; } = null!;
 
         // Propriétés pour le suivi de la progression
         private string _state = "END";

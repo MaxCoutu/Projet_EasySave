@@ -97,17 +97,51 @@
                      Style="{StaticResource RoundedTextBox}" SelectionOpacity="1"
                      Tag="{loc:Loc backup_name}" Text="{Binding Builder.Name, UpdateSourceTrigger=PropertyChanged}"/>
 
-            <TextBox Grid.Row="3" Margin="0,5,0,10" Grid.ColumnSpan="2" 
+            <!-- Source Directory Row -->
+            <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0,5,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
                      Background="#CC19173D" BorderBrush="#7F19173D" Height="40" 
                      Foreground="#7B78AA" Opacity="1" 
                      Style="{StaticResource RoundedTextBox}" SelectionOpacity="1"
                      Tag="{loc:Loc source_directory}" Text="{Binding Builder.SourceDir, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" 
+                        Content="..." 
+                        Width="40" 
+                        Height="40" 
+                        Margin="5,0,0,0" 
+                        Background="#7428D7" 
+                        Foreground="White" 
+                        BorderThickness="0"
+                        Style="{StaticResource RoundedButton}"
+                        Click="BrowseSourceDir_Click"/>
+            </Grid>
 
-            <TextBox Grid.Row="5" Margin="0,5,0,10" Grid.ColumnSpan="2" 
+            <!-- Target Directory Row -->
+            <Grid Grid.Row="5" Grid.ColumnSpan="2" Margin="0,5,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
                      Background="#CC19173D" BorderBrush="#7F19173D" Height="40" 
                      Foreground="#7B78AA" Opacity="1" 
                      Style="{StaticResource RoundedTextBox}" SelectionOpacity="1"
                      Tag="{loc:Loc target_directory}" Text="{Binding Builder.TargetDir, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" 
+                        Content="..." 
+                        Width="40" 
+                        Height="40" 
+                        Margin="5,0,0,0" 
+                        Background="#7428D7" 
+                        Foreground="White" 
+                        BorderThickness="0"
+                        Style="{StaticResource RoundedButton}"
+                        Click="BrowseTargetDir_Click"/>
+            </Grid>
 
             <TextBox Grid.Row="7" Margin="0,5,0,10" Grid.ColumnSpan="2" 
                      Background="#CC19173D" BorderBrush="#7F19173D" Height="40" 

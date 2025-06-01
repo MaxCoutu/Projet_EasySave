@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Projet.Infrastructure;
@@ -19,6 +20,21 @@ namespace Projet.Model
             using FileStream source = File.OpenRead(src);
             using FileStream destination = File.Create(dst);
             await source.CopyToAsync(destination);
+        }
+        
+        /// <summary>
+        /// Determines if a file should be prioritized based on its extension
+        /// </summary>
+        /// <param name="filePath">Path to the file</param>
+        /// <param name="priorityExtensions">List of priority file extensions</param>
+        /// <returns>True if the file should be prioritized, false otherwise</returns>
+        protected static bool IsPriorityFile(string filePath, List<string> priorityExtensions)
+        {
+            if (priorityExtensions == null || priorityExtensions.Count == 0)
+                return false;
+                
+            string extension = Path.GetExtension(filePath)?.ToLower();
+            return !string.IsNullOrEmpty(extension) && priorityExtensions.Contains(extension);
         }
         
         /// <summary>

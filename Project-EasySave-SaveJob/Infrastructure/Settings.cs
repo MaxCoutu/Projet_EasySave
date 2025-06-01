@@ -10,6 +10,7 @@ namespace Projet.Infrastructure
 
         public List<string> CryptoExtensions { get; set; } = new List<string>();
         public List<string> BlockedPackages  { get; set; } = new List<string>();
+        public List<string> PriorityExtensions { get; set; } = new List<string>();
         public string EncryptionKey          { get; set; } = "mySecretKey";
 
         // Parameterless constructor for JsonSerializer
@@ -47,6 +48,7 @@ namespace Projet.Infrastructure
                 {
                     CryptoExtensions = new List<string> { ".zip", ".7z" },
                     BlockedPackages  = new List<string> { "calc.exe" },
+                    PriorityExtensions = new List<string> { ".txt", ".docx", ".xlsx" },
                     EncryptionKey    = "mySecretKey"
                 };
                 def.Save(); // Save the default settings

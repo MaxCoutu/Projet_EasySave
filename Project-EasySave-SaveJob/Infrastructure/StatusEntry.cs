@@ -25,6 +25,10 @@ namespace Projet.Infrastructure
         public int NbFilesLeftToDo { get; set; } = 0;
         public double Progression { get; set; } = 0; // 0-100
         
+        // Priority file information
+        public int PriorityFilesToCopy { get; set; } = 0;
+        public bool IsPriorityFile { get; set; } = false;
+        
         // Error information
         public string ErrorMessage { get; set; } = "";
         
@@ -54,6 +58,8 @@ namespace Projet.Infrastructure
                 TotalFilesSize = other.TotalFilesSize;
                 NbFilesLeftToDo = other.NbFilesLeftToDo;
                 Progression = other.Progression;
+                PriorityFilesToCopy = other.PriorityFilesToCopy;
+                IsPriorityFile = other.IsPriorityFile;
                 ErrorMessage = other.ErrorMessage;
                 BufferSize = other.BufferSize;
                 ActiveJobs = other.ActiveJobs;

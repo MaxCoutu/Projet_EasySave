@@ -65,6 +65,18 @@ namespace Projet.Wpf.View
             RemoveExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
         }
 
+        public void ResetPriorityExtensionInput()
+        {
+            PriorityExtensionInput.Text = PriorityExtensionInput.Tag?.ToString();
+            PriorityExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
+        }
+
+        public void ResetRemovePriorityExtensionInput()
+        {
+            RemovePriorityExtensionInput.Text = RemovePriorityExtensionInput.Tag?.ToString();
+            RemovePriorityExtensionInput.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF7B78AA"));
+        }
+
         private void AddBlockingProgram_Click(object sender, System.Windows.RoutedEventArgs e)
         {
             Dispatcher.BeginInvoke(new Action(() =>
@@ -94,6 +106,22 @@ namespace Projet.Wpf.View
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ResetRemoveExtensionInput();
+            }), DispatcherPriority.ContextIdle, null);
+        }
+
+        private void AddPriorityExtension_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ResetPriorityExtensionInput();
+            }), DispatcherPriority.ContextIdle, null);
+        }
+
+        private void RemovePriorityExtension_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ResetRemovePriorityExtensionInput();
             }), DispatcherPriority.ContextIdle, null);
         }
     }
