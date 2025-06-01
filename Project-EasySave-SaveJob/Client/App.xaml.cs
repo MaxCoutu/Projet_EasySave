@@ -19,6 +19,8 @@ namespace Client
         public static ILanguageService LanguageService { get; private set; }
 
         private static Mutex? _mutex;
+        private static bool _disposed;
+
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -55,5 +57,6 @@ namespace Client
             _mutex?.Dispose();
             base.OnExit(e);
         }
+
     }
 }
