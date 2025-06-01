@@ -63,7 +63,7 @@ namespace Projet
             
             IPathProvider paths = new DefaultPathProvider();
             Settings set = Settings.Load(paths);
-            ILogger logger = new JsonLogger(paths);
+            ILogger logger = new DualFormatLogger(paths);
             IJobRepository repo = new TxtJobRepository(paths);
 
             IBackupService backup = new BackupService(logger, repo, set);
@@ -150,7 +150,7 @@ namespace Projet
             Console.WriteLine("Created test files");
             
             // Create logger
-            var logger = new JsonLogger(paths);
+            var logger = new DualFormatLogger(paths);
             
             // Create repository
             var repo = new JsonJobRepository(paths);

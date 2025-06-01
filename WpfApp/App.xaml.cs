@@ -21,7 +21,7 @@ namespace WpfApp
             string baseDir = PathProvider.GetBaseDir();
 
             var settings = Settings.Load(PathProvider);
-            var logger = new JsonLogger(PathProvider);
+            var logger = new DualFormatLogger(PathProvider);
             var repo = new TxtJobRepository(PathProvider);
             BackupService = new BackupService(logger, repo, settings);
 
