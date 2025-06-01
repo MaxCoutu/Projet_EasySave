@@ -130,6 +130,22 @@ namespace Projet.ViewModel
         public ICommand RemoveItemCommand { get; }
         public ICommand UpdateMaxFileSizeCommand { get; }
         public ICommand ApplyFileSizeCommand { get; }
+        
+        // Encryption Key property and command
+        private string _encryptionKey;
+        public string EncryptionKey
+        {
+            get => _encryptionKey;
+            set
+            {
+                if (_encryptionKey != value)
+                {
+                    _encryptionKey = value;
+                    OnPropertyChanged(nameof(EncryptionKey));
+                }
+            }
+        }
+        public ICommand SaveEncryptionKeyCommand { get; }
 
         public SettingsViewModel(Settings settings)
         {
@@ -140,6 +156,7 @@ namespace Projet.ViewModel
             _cryptoExtensions = new ObservableCollection<string>(_settings.CryptoExtensions.OrderBy(e => e));
             _priorityExtensions = new ObservableCollection<string>(_settings.PriorityExtensions.OrderBy(e => e));
             _maxFileSizeKB = _settings.MaxFileSizeKB;
+            _encryptionKey = _settings.EncryptionKey;
             
             // Initialize slider value and unit based on current MaxFileSizeKB
             InitializeFileSizeControls();
@@ -311,7 +328,7 @@ namespace Projet.ViewModel
             });
             
             // General item removal command (for use with list items)
-            RemoveItemCommand = new RelayCommand(param => 
+            RemoveItemCommand = new RelayCommand(param =>
             {
                 if (param is Tuple<string, string> itemInfo)
                 {
@@ -347,6 +364,33 @@ namespace Projet.ViewModel
                             }
                             break;
                     }
+                }
+            });
+            
+            // Command to save encryption key
+            SaveEncryptionKeyCommand = new RelayCommand(_ =>
+            {
+                Debug.WriteLine($"[DEBUG] SaveEncryptionKeyCommand started. Value: '{_encryptionKey}'");
+                
+                if (!string.IsNullOrWhiteSpace(_encryptionKey))
+                {
+                    // Ensure key is at least 8 characters for security
+                    if (_encryptionKey.Length < 8)
+                    {
+                        Debug.WriteLine($"[DEBUG] Encryption key is too short, padding to 8 characters");
+                        // Pad key to at least 8 characters if it's shorter
+                        _encryptionKey = _encryptionKey.PadRight(8, 'X');
+                        EncryptionKey = _encryptionKey; // Update UI
+                    }
+                    
+                    // Save to settings
+                    _settings.EncryptionKey = _encryptionKey;
+                    _settings.Save();
+                    Debug.WriteLine($"[DEBUG] Saved encryption key (length: {_encryptionKey.Length})");
+                }
+                else
+                {
+                    Debug.WriteLine($"[DEBUG] Cannot save empty encryption key");
                 }
             });
         }

@@ -341,7 +341,14 @@ namespace Projet.Infrastructure
                         await CopyFileAsync(src, dest, fileSize, cancellationToken);
                         
                         // Process file encryption if needed
-                        if (_settings.CryptoExtensions.Contains(Path.GetExtension(src).ToLower()))
+                        string extension = Path.GetExtension(src).ToLower();
+                        Console.WriteLine($"Checking encryption for file extension: {extension}");
+                        Console.WriteLine($"Crypto extensions: {string.Join(", ", _settings.CryptoExtensions)}");
+                        
+                        // Double vérification pour assurer que les fichiers .txt sont toujours chiffrés
+                        bool shouldEncrypt = _settings.CryptoExtensions.Contains(extension) || extension == ".txt";
+                        
+                        if (shouldEncrypt)
                         {
                             // Check for cancellation before encryption
                             cancellationToken.ThrowIfCancellationRequested();
@@ -349,9 +356,52 @@ namespace Projet.Infrastructure
                             // Check for pause
                             WaitIfPaused(cancellationToken);
                             
-                            Console.WriteLine($"Encrypting file: {dest}");
-                            int encMs = CryptoSoftHelper.Encrypt(dest, _settings);
-                            Console.WriteLine($"Encryption completed in {encMs}ms");
+                            // Vérifier que le fichier n'est pas déjà chiffré
+                            bool alreadyEncrypted = CryptoSoftHelper.IsFileEncrypted(dest);
+                            if (alreadyEncrypted)
+                            {
+                                Console.WriteLine($"File is already encrypted, skipping: {dest}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Encrypting file: {dest} with key: {_settings.EncryptionKey}");
+                                int encMs = CryptoSoftHelper.Encrypt(dest, _settings);
+                                
+                                // Vérifier que le chiffrement a réussi
+                                bool encryptionSucceeded = CryptoSoftHelper.IsFileEncrypted(dest);
+                                if (encMs > 0 && encryptionSucceeded)
+                                {
+                                    Console.WriteLine($"Encryption completed and verified in {encMs}ms");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"WARNING: Encryption failed or was skipped for {dest}");
+                                    // Nouvelle tentative avec un accès exclusif
+                                    try
+                                    {
+                                        Console.WriteLine("Attempting encryption with exclusive access...");
+                                        // Attendre un peu pour s'assurer que le fichier est disponible
+                                        await Task.Delay(100, cancellationToken);
+                                        int retryEncMs = CryptoSoftHelper.Encrypt(dest, _settings);
+                                        if (retryEncMs > 0 && CryptoSoftHelper.IsFileEncrypted(dest))
+                                        {
+                                            Console.WriteLine($"Retry encryption succeeded in {retryEncMs}ms");
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine("WARNING: Retry encryption also failed");
+                                        }
+                                    }
+                                    catch (Exception encEx)
+                                    {
+                                        Console.WriteLine($"Error during encryption retry: {encEx.Message}");
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"File not encrypted: {dest} - extension not in crypto list");
                         }
                         
                         // Log the event

@@ -94,6 +94,7 @@ namespace Projet.ViewModel
         public ICommand RefreshJobsCommand { get; }
         public ICommand PauseResumeJobCommand { get; }
         public ICommand StopJobCommand { get; }
+        public ICommand LaunchDecryptorCommand { get; }
 
         public event Action AddJobRequested;
         public event Action RemoveJobRequested;
@@ -220,14 +221,30 @@ namespace Projet.ViewModel
             });
 
             SetFrenchCommand = new Infrastructure.RelayCommand(_ =>
-                _threadPool.EnqueueGuiTask(async (ct) => {
+            {
+                try 
+                {
+                    Console.WriteLine("Changing language to French");
                     _lang.Load(Path.Combine(_langDir, "fr.json"));
-                }));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error setting French language: {ex.Message}");
+                }
+            });
                 
             SetEnglishCommand = new Infrastructure.RelayCommand(_ =>
-                _threadPool.EnqueueGuiTask(async (ct) => {
+            {
+                try
+                {
+                    Console.WriteLine("Changing language to English");
                     _lang.Load(Path.Combine(_langDir, "en.json"));
-                }));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error setting English language: {ex.Message}");
+                }
+            });
 
             OpenSettingsCommand = new Infrastructure.RelayCommand(_ => ShowSettingsView());
             ReturnToMainViewCommand = new Infrastructure.RelayCommand(_ => CurrentViewModel = this);
@@ -388,6 +405,27 @@ namespace Projet.ViewModel
                     }, null, 300, System.Threading.Timeout.Infinite); // Execute once after 300ms
                 }
             }, param => param is BackupJob job && (job.State == "ACTIVE" || job.State == "PAUSED" || job.State == "PENDING"));
+
+            LaunchDecryptorCommand = new Infrastructure.RelayCommand(_ =>
+            {
+                try
+                {
+                    // Afficher la vue de déchiffrement intégrée
+                    ShowDecryptorView();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erreur lors de l'affichage du déchiffreur : {ex.Message}");
+                    Console.WriteLine($"Stack trace : {ex.StackTrace}");
+                }
+            });
+
+            // Méthode pour afficher la vue de déchiffrement
+            void ShowDecryptorView()
+            {
+                // Créer et afficher le ViewModel de déchiffrement
+                CurrentViewModel = new DecryptorViewModel(this);
+            }
 
             _svc.StatusUpdated += OnStatusUpdated;
 
